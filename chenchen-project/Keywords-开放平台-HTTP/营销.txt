@@ -1,0 +1,2 @@
+*** Settings ***
+Resource          0-开放平台-http.txt

@@ -1,0 +1,4 @@
+*** Settings ***
+Resource          ../Keywords-公共/0-自定义关键字.txt
+Resource          android端-登录.txt
+Resource          android端-通用.txt

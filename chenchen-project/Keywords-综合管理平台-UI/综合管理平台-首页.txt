@@ -1,0 +1,20 @@
+*** Settings ***
+Resource          0-综合管理平台.txt
+
+*** Keywords ***
+输入账户名
+    [Arguments]    ${username}
+    通用-web.长等待输入文本    id=username    ${username}
+
+输入密码
+    [Arguments]    ${password}
+    通用-web.长等待输入文本    id=password    ${password}
+
+点击登录按钮
+    通用-web.长等待点击按钮    xpath=//*[@id="login_form"]/input
+
+登录
+    [Arguments]    ${username}=${G_平台账号[${G_综合管理平台测试环境}]}    ${password}=${G_平台密码[${G_综合管理平台测试环境}]}
+    综合管理平台-首页.输入账户名    ${username}
+    综合管理平台-首页.输入密码    ${password}
+    综合管理平台-首页.点击登录按钮

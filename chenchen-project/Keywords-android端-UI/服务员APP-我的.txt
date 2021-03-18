@@ -1,0 +1,17 @@
+*** Settings ***
+Resource          0-android端-ui.txt
+
+*** Keywords ***
+点击我的页面
+    服务员APP-通用.长等待点击文本    我的
+
+点击退出菜单
+    服务员APP-通用.长等待点击元素    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/ll_logout')]
+
+确认退出
+    服务员APP-通用.长等待点击元素    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/btn_positive')]
+
+退登操作
+    点击我的页面
+    点击退出菜单
+    确认退出

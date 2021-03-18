@@ -1,0 +1,71 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+关闭测试浏览器
+    : FOR    ${i}    IN RANGE    1    int(${G_测试浏览器窗口数量})+1
+    \    Switch Browser    ${i}
+    \    Close Browser
+
+打开商户管理后台地址
+    [Arguments]    ${地址}=${G_商户管理后台地址}    ${浏览器类型}=${G_浏览器类型}
+    Open Browser    ${地址}    ${浏览器类型}
+    Maximize Browser Window
+    Set Selenium Speed    ${G_执行速度}
+    #测试浏览器数量加+1
+    ${G_测试浏览器窗口数量}    Evaluate    int(${G_测试浏览器窗口数量})+1
+    Set Global Variable    ${G_测试浏览器窗口数量}    ${G_测试浏览器窗口数量}
+
+打开综合管理平台地址
+    [Arguments]    ${地址}=${G_综合管理平台地址}    ${浏览器类型}=${G_浏览器类型}
+    Open Browser    ${地址}    ${浏览器类型}
+    Maximize Browser Window
+    Set Selenium Speed    ${G_执行速度}
+    #测试浏览器数量加+1
+    ${G_测试浏览器窗口数量}    Evaluate    int(${G_测试浏览器窗口数量})+1
+    Set Global Variable    ${G_测试浏览器窗口数量}    ${G_测试浏览器窗口数量}
+
+通过标题切换窗口
+    [Arguments]    ${title}=${G_商户管理后台标题}
+    Select Window    ${title}
+
+长等待元素显示
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}    <指定元素在页面中未找到>
+
+长等待文本显示
+    [Arguments]    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Wait Until Page Contains    ${text}    ${G_等待超时时间}
+
+长等待点击元素
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Click Element    ${locator}
+
+长等待点击按钮
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Page Should Contain Button    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Click Button    ${locator}
+
+长等待获取元素属性
+    [Arguments]    ${locator}    ${attribute}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    ${value}    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Get Element Attribute    ${locator}@${attribute}
+    [Return]    ${value}
+
+长等待获取元素文本
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    ${text}    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Get Text    ${locator}
+    [Return]    ${text}
+
+长等待输入文本
+    [Arguments]    ${locator}    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Input Text    ${locator}    ${text}
+
+长等待获取表格内容
+    [Arguments]    ${table_locator}    ${row}    ${src_column}
+    ${data}    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Get Table Cell    ${table_locator}    ${row}
+    ...    ${src_column}
+    [Return]    ${data}

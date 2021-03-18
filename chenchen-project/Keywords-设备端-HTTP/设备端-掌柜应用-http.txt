@@ -1,0 +1,19 @@
+*** Settings ***
+Resource          0-设备端-http.txt
+
+*** Keywords ***
+应用列表
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_掌柜应用    index_app_list
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+应用详情
+    [Arguments]    ${pkgName}=应用包名
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_掌柜应用    index_app_details
+    修改Json格式的请求Body    /pkgName    "${pkgName}"
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态

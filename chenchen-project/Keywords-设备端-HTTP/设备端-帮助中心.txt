@@ -1,0 +1,2 @@
+*** Settings ***
+Resource          0-设备端-http.txt

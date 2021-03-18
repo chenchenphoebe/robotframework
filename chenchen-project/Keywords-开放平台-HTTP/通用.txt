@@ -1,0 +1,75 @@
+*** Settings ***
+Resource          0-开放平台-http.txt
+
+*** Keywords ***
+获取商户授权
+    [Arguments]    ${shop_id}=${G_商户id}    ${app_id}=${G_OPEN_THIRD_APP_ID}
+    [Documentation]    通用步骤：
+    ...    步骤一、先【获取商户授权】，可在suite中Setup
+    ...    （如果Token有效，继续步骤二，如果Token过期，自动获取Token再进行步骤二）
+    ...
+    ...    步骤二、Keywords中，先【获取签名】，签名需传两个参数，body值和接口方法名method。
+    ...    （即可将获取到的sign、timestamp、body、method存到下面四个公共变量中
+    ...    ${G_OPEN_SIGN}
+    ...    ${G_OPEN_TIMESTAMP}
+    ...    ${G_OPEN_BODY}
+    ...    ${G_OPEN_METHOD}
+    ...    Keywords中直接用上面四个公共变量即可。）
+    ...
+    ...    步骤三、Keywords中，获取签名后，【API接口】，即可发起请求
+    ...    （默认拿取公共变量${G_OPEN_BODY}、${G_OPEN_METHOD}，不用传参数）
+    Set Global Variable    ${G_OPEN_THIRD_APP_ID}    ${app_id}
+    ${access_token_db}    查询sql    SELECT access_token FROM `oauth_access_token` WHERE third_app_id = '${app_id}' \ AND shop_open_id IN (SELECT open_id FROM open.`open_shop` WHERE shop_id = '${shop_id}' AND app_id ='${app_id}')    ${DB_OPEN_CONNECTION}
+    Set Global Variable    ${OPEN_ACCESS_TOKEN}    ${access_token_db[0][0]}
+    获取商户信息
+    ${status}    Run Keyword And Return Status    Should Contain    ${G_RESPONSE_BODY}    access_token过期
+    :FOR    ${i}    IN RANGE    1
+    \    Exit For Loop If    '${status}' == 'False'
+    \    刷新AccessToken
+
+刷新AccessToken
+    [Arguments]    ${shop_id}=${G_商户id}    ${app_id}=${G_OPEN_THIRD_APP_ID}
+    ${refresh_token}    查询sql    SELECT refresh_access_token FROM `oauth_access_token` WHERE third_app_id = '${app_id}' \ AND shop_open_id IN (SELECT open_id FROM open.`open_shop` WHERE shop_id = '${shop_id}' AND app_id ='${app_id}')    ${DB_OPEN_CONNECTION}
+    ${client_secret}    查询sql    SELECT app_secret FROM oauth_client WHERE app_id = '${app_id}'    ${DB_OPEN_CONNECTION}
+    创建http上下文    ${G_OPEN_REFRESH_ACCESS_TOKEN_HOST}
+    加载接口模板    OPEN_API    index_kfpt_refresh_access_token
+    Add Request Header    Content-Type    application/x-www-form-urlencoded
+    修改Url携带的参数    client_id    ${app_id}
+    修改Url携带的参数    client_secret    ${client_secret[0][0]}
+    修改Url携带的参数    refresh_token    ${refresh_token[0][0]}
+    发送请求
+    ${refresh_TOKEN}    ExtendHttpLibrary.Get Json Value    ${G_RESPONSE_BODY}    /access_token
+    ${refresh_TOKEN}    Replace String    ${refresh_TOKEN}    "    ${EMPTY}
+    Set Global Variable    ${OPEN_ACCESS_TOKEN}    ${refresh_TOKEN}
+
+获取签名
+    [Arguments]    ${body}    ${method}
+    [Documentation]    body值中默认不带双引号，获取签名中会自动添加
+    创建http上下文    ${G_OPEN_HOST_SIGN}
+    通用-Http.加载接口模板    OPEN_API    index_kfpt_get_sign
+    修改Json格式的请求Body    /body    "${body}"
+    修改Json格式的请求Body    /app_id    "${G_OPEN_THIRD_APP_ID}"
+    修改Json格式的请求Body    /access_token    "${OPEN_ACCESS_TOKEN}"
+    修改Json格式的请求Body    /timestamp    1514951767312
+    修改Json格式的请求Body    /method    "${method}"
+    发送请求
+    验证请求响应状态    200
+    ${sign}    ExtendHttpLibrary.Get Json Value    ${G_RESPONSE_BODY}    /sign
+    ${timestamp}    ExtendHttpLibrary.Get Json Value    ${G_RESPONSE_BODY}    /timestamp
+    Set Global Variable    ${G_OPEN_SIGN}    ${sign}
+    Set Global Variable    ${G_OPEN_TIMESTAMP}    ${timestamp}
+    Set Global Variable    ${G_OPEN_METHOD}    ${method}
+    Set Global Variable    ${G_OPEN_BODY}    ${body}
+
+API接口
+    [Arguments]    ${body}=${G_OPEN_BODY}    ${method}=${G_OPEN_METHOD}
+    创建http上下文    ${G_OPEN_HOST}
+    通用-Http.加载接口模板    OPEN_API    index_kfpt_API
+    修改Json格式的请求Body    /app_id    "${G_OPEN_THIRD_APP_ID}"
+    修改Json格式的请求Body    /access_token    "${OPEN_ACCESS_TOKEN}"
+    修改Json格式的请求Body    /body    "${body}"
+    修改Json格式的请求Body    /timestamp    ${G_OPEN_TIMESTAMP}
+    修改Json格式的请求Body    /sign    ${G_OPEN_SIGN}
+    修改Json格式的请求Body    /method    "${method}"
+    发送请求
+    验证请求响应状态    200

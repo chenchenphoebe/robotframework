@@ -1,0 +1,37 @@
+*** Settings ***
+Resource          0-微信端-UI.txt
+
+*** Keywords ***
+进入公众号
+    [Arguments]    ${公众号}
+    通用-app.打开app
+    sleep    5s
+    通用-app.长等待点击元素    xpath=//android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.view.View/android.widget.FrameLayout[2]/android.view.View/android.support.v7.widget.LinearLayoutCompat/android.widget.TextView    #点击搜索
+    通用-app.长等待输入文本    xpath=//android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.view.View/android.widget.FrameLayout/android.view.View/android.support.v7.widget.LinearLayoutCompat/android.widget.LinearLayout/android.widget.RelativeLayout/android.widget.LinearLayout[2]/android.widget.EditText    ${公众号}    #xpath=//android.widget.EditText[@text='搜索']
+    通用-app.长等待点击元素    xpath=//android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.view.View/android.widget.FrameLayout[2]/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.ListView/android.widget.RelativeLayout[2]    #进入深圳云移公众号
+    通用-app.长等待元素显示    xpath=//android.widget.TextView[@text='${G_商户名称}']    #等待显示商户名称
+
+获取商户序列号
+    [Arguments]    ${商户id}
+    ${查询结果}    数据库.查询sql    SELECT SERIAL FROM shop WHERE id = '${商户id}'
+    ${商户序列号}    Set Variable    ${查询结果[0][0]}
+    [Return]    ${商户序列号}
+
+通过链接进入商城首页
+    ${商户序列号}    微信端_微信商城_UI.获取商户序列号    ${G_商户id}
+    ${status_消息按钮}    Run Keyword And Return Status    通用-app.长等待元素显示    xpath=//android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.view.View/android.widget.FrameLayout[1]/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.ImageView    #判断消息按钮是否可见
+    Run Keyword If    '${status_消息按钮}'=='True'    通用-app.长等待点击元素    xpath=//android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.view.View/android.widget.FrameLayout[1]/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.ImageView    #若消息按钮可见，点击消息按钮
+    通用-app.长等待输入文本    xpath=//android.widget.EditText[@resource-id=\"com.tencent.mm:id/a3b\"]    http://m.test.saofu.cn/mall/${商户序列号}    #输入首页链接    #提示找不到元素
+    通用-app.长等待点击元素    xpath=//android.widget.Button[@text='发送']    #点击发送
+    通用-app.长等待点击元素    xpath=//android.widget.TextView[@text="http://m.test.saofu.cn/mall/${商户序列号}"]    #点击链接
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Page Should Contain Element    xpath=//*[@text='${G_公众号}']
+
+通过菜单进入商城首页
+    ${商户序列号}    微信端_微信商城_UI.获取商户序列号    ${G_商户id}
+    ${status_消息按钮}    Run Keyword And Return Status    通用-app.长等待元素显示    xpath=//android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.FrameLayout/android.view.View/android.widget.FrameLayout[1]/android.widget.LinearLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.ImageView    #判断消息按钮是否可见
+    sleep    4s
+    通用-app.长等待点击元素    xpath=//android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout[2]/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.LinearLayout/android.widget.FrameLayout[2]    #点击一级菜单微商城
+    通用-app.长等待点击元素    xpath=//android.widget.FrameLayout/android.widget.ListView/android.widget.TextView[@test='微商城']    #点击二级菜单微商城
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    Selenium2Library.Page Should Contain Element    xpath=//*[text()='${G_公众号}']
+
+通过链接进入商品详情页

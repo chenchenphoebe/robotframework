@@ -1,0 +1,9 @@
+*** Settings ***
+Resource          ../Keywords-公共/0-自定义关键字.txt
+Resource          微信端_微信商城_http.txt
+Resource          微信端-通用-http.txt
+Resource          微信端-会员主页-http.txt
+Resource          微信端_智慧餐厅_http.txt
+Resource          微信端-卡券-http.txt
+Resource          微信端_支付_http.txt
+Resource          微信端_智能小二_http.txt

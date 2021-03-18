@@ -1,0 +1,66 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt
+
+*** Keywords ***
+新流程微信支付
+    [Arguments]    ${orderid}
+    通用-http.创建http上下文    ${PAY_HOST}
+    通用-http.加载接口模板    WEIXIN_支付    index_order_pay
+    修改Url携带的参数    productOrderId    ${orderid}
+    修改Url携带的参数    openId    ${G_PAY_OPENID}
+    修改Url携带的参数    shopId    ${G_PAY_SHOPID}
+    微信端_支付_http.加载个人微信端请求
+    发送请求
+
+加载个人微信端请求
+    ${shop_serial}    数据库.通过商户id获取商户serial    ${G_PAY_SHOPID}
+    ${openId}    数据库.通过手机号和商户id查找用户openId    ${zf_用户手机号}    ${G_PAY_SHOPID}
+    Add Request Header    User-Agent    Mozilla/5.0 (Linux; Android 4.4.2; MIX Build/MMB29M) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Mobile Safari/537.36 MicroMessenger/6.5.10.1080 NetType/WIFI Language/zh_CN
+    Add Request Header    cookie    ${shop_serial}=${openId}
+
+截取字符串
+    [Arguments]    ${string}    ${start}    ${end}
+    [Documentation]    ${string} \ 待截取的字符串
+    ...
+    ...    ${start} \ \ 开始截取位置
+    ...
+    ...    ${end} \ \ \ 结束截取位置
+    ${sub_str}    Get Substring    ${string}    ${start}    ${end}
+    [Return]    ${sub_str}
+
+获取json值
+    [Arguments]    ${str}    ${path}
+    ${return_val}    Get Json Value    ${str}    ${path}
+    [Return]    ${return_val}
+
+卡劵购买
+    通用-Http.创建http上下文    ${PAY_HOST}    http    True
+    通用-Http.加载接口模板    WEIXIN_支付    index_kq_pay
+    ${serial}    通过商户id获取商户serial    ${G_商户id}
+    修改Url携带的参数    /serial    ${serial}
+    修改Url携带的参数    /openId    ${G_PAY_OPENID}
+    微信端_支付_http.加载个人微信端请求
+    发送请求
+    ${tradeOrderId}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${tradeOrderId}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+旧流程微信支付
+    [Arguments]    ${orderid}
+    通用-http.创建http上下文    ${PAY_HOST}
+    通用-http.加载接口模板    WEIXIN_支付    index_Old_pay
+    修改Url携带的参数    productOrderId    ${orderid}
+    修改Url携带的参数    openId    ${G_PAY_OPENID}
+    修改Url携带的参数    shopId    ${G_PAY_SHOPID}
+    微信端_支付_http.加载个人微信端请求
+    发送请求
+
+验证支付结果
+    [Arguments]    ${path}    ${contain_value}
+    ${value}    Get Json Value    ${G_RESPONSE_BODY}    ${path}
+    should contain    ${value}    ${contain_value}
+
+去除引号
+    [Arguments]    ${orderid}
+    ${tradeOrderId}    Replace String    ${orderid}    "    ${EMPTY}
+    [Return]    ${tradeOrderId}

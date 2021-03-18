@@ -1,0 +1,17 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+点击取消
+    通用-web.长等待点击元素    xpath=/html/body/div[1]/div/div[2]/div[2]/a[text()='取消']
+
+点击确定
+    通用-web.长等待点击元素    xpath=/html/body/div[1]/div/div[2]/div[2]/a[text()='确定']
+
+验证tips不存在
+    [Arguments]    ${tips}
+    Selenium2Library.Page Should Not Contain Element    xpath=//div[@class='xubox_tipsMsg' and text()='${tips}']
+
+验证tips存在
+    [Arguments]    ${tips}
+    通用-web.长等待元素显示    xpath=//div[@class='xubox_tipsMsg' and text()='${tips}']

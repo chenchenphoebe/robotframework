@@ -1,0 +1,10 @@
+*** Settings ***
+Resource          0-开放平台-http.txt
+
+*** Keywords ***
+开放平台修改积分
+    [Arguments]    ${modify_type}    ${mobile}    ${bonus_modified}    ${remark}=test
+    [Documentation]    modify_type:1-增加 2-减少
+    ${body}    Set Variable    {'mobile':'${mobile}','modify_type':'${modify_type}','bonus_modified':'${bonus_modified}','remark':'${remark}'}
+    获取签名    ${body}    member.bonus.update
+    API接口

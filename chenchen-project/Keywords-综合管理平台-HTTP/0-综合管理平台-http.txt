@@ -1,0 +1,4 @@
+*** Settings ***
+Resource          ../Keywords-公共/0-自定义关键字.txt
+Resource          综合管理平台-首页-http.txt
+Resource          综合管理平台-通用-http.txt

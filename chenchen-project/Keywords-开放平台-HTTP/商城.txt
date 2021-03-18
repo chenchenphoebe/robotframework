@@ -1,0 +1,22 @@
+*** Settings ***
+Resource          0-开放平台-http.txt
+
+*** Keywords ***
+查询订单列表
+    [Arguments]    ${body}
+    获取签名    ${body}    mall.order.list
+    API接口
+    log    ${G_RESPONSE_BODY}
+    Should Contain    ${G_RESPONSE_BODY}    \\"errno\\":\\"0\\"
+
+查询订单详情
+    [Arguments]    ${body}
+    获取签名    ${body}    mall.order.detail
+    API接口
+    log    ${G_RESPONSE_BODY}
+
+查询订单状态
+    [Arguments]    ${body}
+    获取签名    ${body}    mall.order.status
+    API接口
+    log    ${G_RESPONSE_BODY}

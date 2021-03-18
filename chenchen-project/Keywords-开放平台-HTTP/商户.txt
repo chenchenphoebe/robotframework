@@ -1,0 +1,7 @@
+*** Settings ***
+Resource          0-开放平台-http.txt
+
+*** Keywords ***
+获取商户信息
+    获取签名    ${EMPTY}    shop.get
+    API接口

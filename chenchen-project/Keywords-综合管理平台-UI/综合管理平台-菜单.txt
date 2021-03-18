@@ -1,0 +1,9 @@
+*** Settings ***
+Resource          0-综合管理平台.txt
+
+*** Keywords ***
+点击菜单
+    [Arguments]    ${一级菜单}    ${二级菜单}
+    [Documentation]    eg.综合管理平台-菜单.点击菜单 商户管理 商户配置
+    通用-web.长等待点击元素    xpath=//a[text()='${一级菜单}']
+    通用-web.长等待点击元素    xpath=//a[text()='${二级菜单}']

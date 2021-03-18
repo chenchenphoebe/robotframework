@@ -1,0 +1,55 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+上传文件电脑到手机
+    [Arguments]    ${local}    ${remote}=${G_手机端存放图片路径}
+    [Documentation]    ${remote} : ${G_手机端存放图片路径}/1.png
+    #使用adb上传文件
+    ${status}    Evaluate    os.system("adb push ${local} ${remote}")    os
+    Should Be Equal As Strings    ${status}    0    <上传文件电脑到手机失败>
+    #广播文件
+    ${status}    Evaluate    os.system("adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file://${remote}")    os
+
+下载文件手机到电脑
+
+删除手机端目录下文件
+    [Arguments]    ${name}=*.png
+    ${status}    Evaluate    os.system("adb shell rm ${G_手机端存放图片路径}/${name}")    os
+    Should Be Equal As Strings    ${status}    0    <上传文件电脑到手机失败>
+
+获取当天日期到N天后日期区间
+    [Arguments]    ${day}=10    ${separator}=${SPACE}-${SPACE}
+    [Documentation]    格式：${当天日期}${SPACE}-${SPACE}${N天后日期}
+    ${date}    Get Current Date
+    ${overdate}    Get Current Date    time_zone=local    increment=+${day} day
+    ${A}    Split String    ${date}    ${SPACE}
+    ${B}    Split String    ${overdate}    ${SPACE}
+    ${catenate}    Catenate    SEPARATOR=${separator}    ${A[0]}    ${B[0]}
+    [Return]    ${catenate}
+
+随机一个带两位小数的金额
+    [Arguments]    ${left_num}    ${right_num}
+    ${left_random}    Generate Random String    ${left_num}    [NUMBERS]
+    ${right_random}    Generate Random String    ${right_num}    [NUMBERS]
+    ${元为单位}    Evaluate    ${left_random}.${right_random}
+    ${分为单位}    Convert To Integer    ${left_random}${right_random}
+    [Return]    ${分为单位}    ${元为单位}
+
+两个整数相加取两位小数并去零
+    [Arguments]    ${int1}    ${int2}
+    ${str_float}    Evaluate    str(int(${int1})+int(${int2}))[:-2]+'.'+str(int(${int1})+int(${int2}))[-2:]
+    ${str_float}    小数去除末位0    ${str_float}
+    [Return]    ${str_float}
+
+两个整数相减取两位小数并去零
+    [Arguments]    ${int1}    ${int2}
+    ${str_float}    Evaluate    str(int(${int1})-int(${int2}))[:-2]+'.'+str(int(${int1})-int(${int2}))[-2:]
+    ${str_float}    小数去除末位0    ${str_float}
+    [Return]    ${str_float}
+
+小数去除末位0
+    [Arguments]    ${小数}
+    ${小数}    Replace String Using Regexp    ${小数}    0+?$    ${EMPTY}
+    ${去0后小数}    Replace String Using Regexp    ${小数}    [.]$    ${EMPTY}
+    [Return]    ${去0后小数}

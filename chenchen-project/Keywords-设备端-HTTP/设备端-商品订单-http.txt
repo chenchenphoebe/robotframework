@@ -1,0 +1,170 @@
+*** Settings ***
+Resource          0-设备端-http.txt
+
+*** Keywords ***
+获取订单列表
+    [Arguments]    ${page}=1    ${status}=0    ${type}=0
+    [Documentation]    page:(页码)
+    ...    status:0-全部；1-待确认；2-待付款；3-待配送；7-已付款；4-待收货；5-交易完成；6-交易关闭
+    ...    type:0-全部；1-配送；2-自提；3-店内
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_list
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /page    ${page}
+    修改Json格式的请求Body    /status    ${status}
+    修改Json格式的请求Body    /type    ${type}
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+获取订单详情
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_item
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    "${order_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+校验订单状态
+    [Arguments]    ${order_id}    ${status}
+    [Documentation]    status状态如下：
+    ...    待确认
+    ...    待付款
+    ...    待配送
+    ...    待配送(未付款)
+    ...    待收货
+    ...    待收货(未付款)
+    ...    已付款
+    ...    交易完成
+    ...    顾客确认收货
+    ...    超时完成
+    ...    交易关闭
+    设备端-商品订单-http.获取订单详情    ${order_id}
+    ${status_value}    Get Json Value    ${G_RESPONSE_BODY}    /order/status/value
+    Should Be Equal    ${status_value}    ${status}
+
+订单详情校验留言信息
+    [Arguments]    ${msg}
+    ${result}    Get Json Value    ${G_RESPONSE_BODY}    /order/goodsList/0/goodsWxMsg
+    Should Be Equal    ${result}    ${msg}
+
+根据订单号拉取快递公司
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_sdclistByOrderId
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    "${order_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+确认订单
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_sureAction
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    "${order_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+取消订单
+    [Arguments]    ${订单ID}
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${shopid}    商城-通过订单ID查找商户ID    ${订单ID}
+    ${reasonId}    商城-通过商户ID查找取消原因ID    ${shopid}
+    通用-http.加载接口模板    POS_商城业务    index_porder_cancelAction
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    ${订单ID}
+    修改Json格式的请求Body    /reasonId    "${reasonId}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+确认配送
+    [Arguments]    ${deliverNo}    ${order_id}    ${快递名称}
+    [Documentation]    deliverNo:(快递联系信息)；order_id(订单号)；sdcId:(快递公司ID)
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${商户ID}    商城-通过订单ID查找商户ID    ${order_id}
+    ${sdcId}    商城-通过商户ID和快递名查找快递ID    ${商户ID}    ${快递名称}
+    通用-http.加载接口模板    POS_商城业务    index_porder_deliverAction
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /deliverNo    ${deliverNo}
+    修改Json格式的请求Body    /id    ${order_id}
+    修改Json格式的请求Body    /sdcId    "${sdcId}"
+    发送请求
+    验证请求响应状态
+
+物流配送
+    [Arguments]    ${orderId}    ${sdcName}    ${deliverNo}
+    [Documentation]    ${order_id} 订单号
+    ...    ${sdc_name}物流公司
+    ...    ${deliverNo}快递单号
+    ${sdc_id}    数据库.商城-通过物流公司名称查询物流公司sdc_id    ${sdcName}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_deliver_byNo
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    "${orderId}"
+    修改Json格式的请求Body    /deliverNo    "${deliverNo}"
+    修改Json格式的请求Body    /sdcId    "${sdc_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+自配送
+    [Arguments]    ${order_id}    ${sdc_name}    ${deliverPhone}
+    ${sdc_id}    数据库.商城-通过物流公司名称查询物流公司sdc_id    ${sdc_name}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_deliverAction_byPhone
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    ${order_id}
+    修改Json格式的请求Body    /deliverPhone    "${deliverPhone}"
+    修改Json格式的请求Body    /sdcId    "${sdc_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+扫码完成订单
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_finishAction
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    "${order_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    加载设备端公共请求部分
+    Add Request Header    DeviceId    ${G_SCL_DeviceId}    #配置信息参数化，这里无法识别但不报错
+    Add Request Header    Token    ${G_POS_TOKEN}
+    Add Request Header    OperatorId    ${G_SCL_OperatorId}
+    Add Request Header    ProductVersion    5.4.3C
+
+结单
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_porder_statement
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    ${order_id}
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+退款申请驳回
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_商城业务    index_refund_dismiss
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /id    "${order_id}"
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+校验退款状态
+    [Arguments]    ${order_id}    ${status}
+    [Documentation]    status状态如下：
+    ...    申请失败
+    设备端-商品订单-http.获取订单详情    ${order_id}
+    ${status_value}    Get Json Value    ${G_RESPONSE_BODY}    /order/afterSaleApplication/afterSaleStatusText
+    Should Be Equal    ${status_value}    ${status}

@@ -1,0 +1,5 @@
+*** Settings ***
+Resource          ../Keywords-公共/0-自定义关键字.txt
+Resource          综合管理平台-首页.txt
+Resource          综合管理平台-菜单.txt
+Resource          终端配置中心/0-终端配置中心.txt

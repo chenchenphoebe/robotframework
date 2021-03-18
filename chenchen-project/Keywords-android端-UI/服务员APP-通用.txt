@@ -1,0 +1,26 @@
+*** Settings ***
+Resource          0-android端-ui.txt
+
+*** Keywords ***
+长等待输入文本
+    [Arguments]    ${locator}    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Input Text    ${locator}    ${text}
+
+长等待元素显示
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}    <指定元素在页面中未找到>
+
+长等待文本显示
+    [Arguments]    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Wait Until Page Contains    ${text}    ${G_等待超时时间}
+
+长等待点击元素
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Click Element    ${locator}
+
+长等待点击文本
+    [Arguments]    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Wait Until Page Contains    ${text}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    AppiumLibrary.Click Text    ${text}

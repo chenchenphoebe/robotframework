@@ -1,0 +1,58 @@
+*** Settings ***
+Resource          0-设备端-http.txt
+
+*** Keywords ***
+校验总计拉客统计数据
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_get_lake_performance_static
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+校验人员管理列表
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_get_lake_person_manage_person_list
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+校验人员管理详情
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_get_lake_person_manage_person_msg
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+校验删除权限密码
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_get_lake_person_manage_permission
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+校验增加拉客人员
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_set_lake_person_manage_person_edit
+    加载设备端公共请求部分
+    ${phone}    Evaluate    random.randint(12300000000,12399999999)    random
+    修改Json格式的请求Body    /personMsg/mobile    "${phone}"
+    ${num}    Evaluate    random.randint(50000,99999)    random
+    修改Json格式的请求Body    /personMsg/jobNumber    "${num}"
+    发送请求
+    验证请求响应状态
+
+校验删除拉客人员
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_delete_lake_person_manage_person_delete
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /personId    ${G_拉客人员ID}
+    发送请求
+    验证请求响应状态
+
+绑定拉客人员二维码
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_拉客业务    index_set_lakelake_person_manage_binding
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /personId    ${G_拉客人员ID}
+    发送请求
+    验证请求响应状态

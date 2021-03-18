@@ -1,0 +1,29 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt
+
+*** Keywords ***
+选择商户和用户
+    [Arguments]    ${shop_id}=${G_商户id}    ${mobile}=${G_用户手机号}    ${hopBranchName}=${G_shopBranchName}
+    [Documentation]    步骤一、微信端使用前先【选择商户和用户】，可在test suite中setup。信息存储到下面两个公共变量中
+    ...    ${G_SHOP_SERIAL}
+    ...    ${G_OPENID}
+    ...
+    ...    步骤二、Keywords中，发送请求前【加载微信公共请求部分】
+    ...    从步骤一两个公共变量中获取加载信息
+    Set Global Variable    ${G_SHOP_ID}    ${shop_id}
+    Set Global Variable    ${G_MOBILE}    ${mobile}
+    ${shop_serial}    数据库.通过商户id获取商户serial    ${G_SHOP_ID}
+    ${openId}    数据库.通过手机号和商户id查找用户openId    ${G_MOBILE}    ${G_SHOP_ID}
+    Set Global Variable    ${G_SHOP_SERIAL}    ${shop_serial}
+    Set Global Variable    ${G_OPENID}    ${openId}
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${G_shopBranchName}
+
+加载微信端公共请求部分
+    [Documentation]    步骤一、微信端使用前先【选择商户和用户】，可在test suite中setup。信息存储到下面两个公共变量中
+    ...    ${G_SHOP_SERIAL}
+    ...    ${G_OPENID}
+    ...
+    ...    步骤二、Keywords中，发送请求前【加载微信公共请求部分】
+    ...    从步骤一两个公共变量中获取加载信息
+    Add Request Header    User-Agent    Mozilla/5.0 (Linux; Android 4.4.2; MIX Build/MMB29M) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Mobile Safari/537.36 MicroMessenger/6.5.10.1080 NetType/WIFI Language/zh_CN
+    Add Request Header    Cookie    ${G_SHOP_SERIAL}=${G_OPENID}; zbotoken=${G_OPENID}

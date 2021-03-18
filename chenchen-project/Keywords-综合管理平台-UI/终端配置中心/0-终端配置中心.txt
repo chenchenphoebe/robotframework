@@ -1,0 +1,5 @@
+*** Settings ***
+Resource          终端配置中心-操作日志.txt
+Resource          终端配置中心-配置关系.txt
+Resource          终端配置中心-配置表.txt
+Resource          ../0-综合管理平台.txt

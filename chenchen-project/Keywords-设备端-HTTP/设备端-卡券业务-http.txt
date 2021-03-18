@@ -1,0 +1,218 @@
+*** Settings ***
+Resource          0-设备端-http.txt
+
+*** Keywords ***
+二维码修改会员积分
+    [Arguments]    ${qrCode}    ${bonus}    ${updateType}
+    [Documentation]    updateType:1-增加、2-减少
+    ${timeStamp}    获取当前时间戳
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_customer_customer_bonus_update_v37
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /code    "${qrCode}"
+    修改Json格式的请求Body    /bonus    ${bonus}
+    修改Json格式的请求Body    /updateType    ${updateType}
+    修改Json格式的请求Body    /timeStamp    ${timeStamp}
+    发送请求
+    验证请求响应状态
+
+二维码查询会员信息
+    [Arguments]    ${code}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_customer_customer_query_v3
+    加载设备端公共请求部分
+    修改Json格式的请求Body    /code    "${code}"
+    发送请求
+    验证请求响应状态
+
+二维码查询会员信息-获取金额和积分
+    ${金额}    Get Json Value By Path    /customer/balance
+    ${积分}    Get Json Value By Path    /customer/bonus
+    [Return]    ${金额}    ${积分}
+
+卡券中心
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_list
+    修改Json格式的请求Body    /applicationProtocolInterfaceVersioncode    370
+    修改Json格式的请求Body    /page    1
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+优惠券详情
+    [Arguments]    ${cardname}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_coupon_detail
+    ${results}    查询sql    select * from coupon_weixin w \ left join base_info b on w.base_info_id=b.id where b.shop_id = 739 AND b.get_in_type in (1,3) and listing=1 and b.title = '${cardname}';
+    ${券serial}    set variable    ${results[0][40]}
+    修改Json格式的请求Body    /serial    ${券serial}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+会员卡详情
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_card_detail
+    修改Json格式的请求Body    /serial    40896215260288126976
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+统计分析
+    [Arguments]    ${dateType}=1    ${startDate}=0
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_create_invoice
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /startDate    ${startDate}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+会员卡派发统计
+    [Arguments]    ${dateType}=1    ${page}=1    ${startDate}=0
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_marketing_distribute_and_use_record
+    修改Json格式的请求Body    /cardType    "card"
+    修改Json格式的请求Body    /dataType    "dispatch"
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    修改Json格式的请求Body    /startDate    ${startDate}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+折扣使用统计
+    [Arguments]    ${dateType}=1    ${page}=1
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_customer_customer_query_discount
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+充值和消费
+    [Arguments]    ${dateType}=1    ${page}=1    ${recordType}=2    ${startDate}=0
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_marketing_trade_record
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    修改Json格式的请求Body    /recordType    ${recordType}
+    修改Json格式的请求Body    /startDate    ${startDate}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+积分增加和扣除
+    [Arguments]    ${dateType}=1    ${page}=1    ${recordType}=1
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_marketing_bonusrecord
+    修改Json格式的请求Body    /applicationProtocolInterfaceVersioncode    370
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    修改Json格式的请求Body    /recordType    ${recordType}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+派发和核销
+    [Arguments]    ${dateType}=1    ${page}=1    ${startDate}=0
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_marketing_distribute_and_use_record
+    修改Json格式的请求Body    /cardType    "coupon"
+    修改Json格式的请求Body    /dataType    "dispatch"
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    修改Json格式的请求Body    /startDate    ${startDate}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+储值卡派发
+    [Arguments]    ${dateType}=1    ${page}=1
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_kq_marketing_czcardrecord
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+储值卡消费
+    [Arguments]    ${dateType}=1    ${page}=1
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_marketing_czcard_consume_record
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+统计团购券核销
+    [Arguments]    ${dateType}=1    ${page}=1    ${platform}=1    ${startDate}=0
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_marketing_groupcoupon_verify_list
+    修改Json格式的请求Body    /dateType    ${dateType}
+    修改Json格式的请求Body    /page    ${page}
+    修改Json格式的请求Body    /platform    ${platform}
+    修改Json格式的请求Body    /startDate    ${startDate}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+验证优惠券
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_card_card_query_v3
+    ${results}    查询sql    SELECT \ r.serial FROM coupon_weixin_customer r,coupon_weixin cw,base_info b1 \ \ WHERE r.coupon_id = cw.id \ AND cw.base_info_id = b1.id \ \ \ and cw.shop_id=739 \ \ AND NOT EXISTS \ (SELECT \ 1 FROM \ coupon_weixin_verification v \ WHERE v.cc_id = r.id) \ AND IFNULL(r.is_give_by_friend,0) != 1 AND r.lock_state=0 \ \ AND (CASE \ WHEN b1.date_info_type = 2 \ THEN DATE_ADD( DATE_FORMAT(r.create_time,'%Y-%m-%d'), \ \ INTERVAL IFNULL(b1.date_info_fixed_term,'3650')+IFNULL(b1.fixed_begin_term,0) DAY) > NOW() \ ELSE DATE_ADD(b1.date_info_end_timestamp,INTERVAL 1 DAY) > NOW() \ END \ ) \ \ AND r.is_deleted=0 \ \ LIMIT 1
+    ${券code}    set variable    ${results[0][0]}
+    修改Json格式的请求Body    /code    ${券code}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+核销优惠券
+    [Arguments]    ${verify}=1
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_card_cardcoupon_verify_v3
+    ${results}    查询sql    SELECT \ r.serial FROM coupon_weixin_customer r,coupon_weixin cw,base_info b1 \ \ WHERE r.coupon_id = cw.id \ AND cw.base_info_id = b1.id \ \ \ and cw.shop_id=739 \ \ AND NOT EXISTS \ (SELECT \ 1 FROM \ coupon_weixin_verification v \ WHERE v.cc_id = r.id) \ AND IFNULL(r.is_give_by_friend,0) != 1 AND r.lock_state=0 \ \ AND (CASE \ WHEN b1.date_info_type = 2 \ THEN DATE_ADD( DATE_FORMAT(r.create_time,'%Y-%m-%d'), \ \ INTERVAL IFNULL(b1.date_info_fixed_term,'3650')+IFNULL(b1.fixed_begin_term,0) DAY) > NOW() \ ELSE DATE_ADD(b1.date_info_end_timestamp,INTERVAL 1 DAY) > NOW() \ END \ ) \ \ AND r.is_deleted=0 \ \ LIMIT 1
+    ${券code}    set variable    ${results[0][0]}
+    修改Json格式的请求Body    /code    ${券code}
+    修改Json格式的请求Body    /verify    ${verify}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+现金支付
+    [Arguments]    ${order_id}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_customer_ordervalue
+    修改Json格式的请求Body    /orderId    ${order_id}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+生成充值订单
+    [Arguments]    ${balance}=10000    ${mobile}=15016718433
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    POS_卡券业务    index_get_customer_order
+    修改Json格式的请求Body    /amount    "${balance}"
+    修改Json格式的请求Body    /code    "${mobile}"
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    [Return]    ${order_id}

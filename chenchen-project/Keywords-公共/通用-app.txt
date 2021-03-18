@@ -1,0 +1,55 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+关闭测试app
+    Close All Applications
+
+打开app
+    [Arguments]    ${remote_url}=${G_REMOTE_URL}    ${platform_name}=${G_PLATFORM_NAME}    ${platform_version}=${G_PLATFORM_VERSION}    ${device_name}=${G_DEVICE_NAME}    ${app_activity}=${G_WEIXIN_ACTIVITY}    ${app_package}=${G_WEIXIN_PACKAGE}
+    ...    ${unicode_keyboard}=True    ${reset_keyboard}=True    ${no_reset}=True
+    ${app_id}    YunnexLibrary.Open Application    ${remote_url}    platformName=${platform_name}    platformVersion=${platform_version}    deviceName=${device_name}    appActivity=${app_activity}
+    ...    appPackage=${app_package}    unicodeKeyboard=${unicode_keyboard}    resetKeyboard=${reset_keyboard}    noReset=${no_reset}
+    [Return]    ${app_id}
+
+打开微信
+    [Arguments]    ${remote_url}=${G_REMOTE_URL}    ${platform_name}=${G_PLATFORM_NAME}    ${platform_version}=${G_PLATFORM_VERSION}    ${device_name}=${G_DEVICE_NAME}    ${app_activity}=${G_WEIXIN_ACTIVITY}    ${app_package}=${G_WEIXIN_PACKAGE}
+    ...    ${unicode_keyboard}=True    ${reset_keyboard}=True    ${no_reset}=True
+    ${app_id}    YunnexLibrary.Open Application    ${remote_url}    platformName=${platform_name}    platformVersion=${platform_version}    deviceName=${device_name}    appActivity=${app_activity}
+    ...    appPackage=${app_package}    unicodeKeyboard=${unicode_keyboard}    resetKeyboard=${reset_keyboard}    noReset=${no_reset}
+    [Return]    ${app_id}
+
+长等待元素显示
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}    <指定元素在页面中未找到>
+
+长等待文本显示
+    [Arguments]    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Page Contains    ${text}    ${G_等待超时时间}
+
+长等待点击元素
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Click Element    ${locator}
+
+长等待点击按钮
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Element Is Visible    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Click Button    ${locator}
+
+长等待获取元素属性
+    [Arguments]    ${locator}    ${attribute}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    ${value}    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Get Element Attribute    ${locator}    ${attribute}
+    [Return]    ${value}
+
+长等待获取元素文本
+    [Arguments]    ${locator}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    ${text}    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Get Text    ${locator}
+    [Return]    ${text}
+
+长等待输入文本
+    [Arguments]    ${locator}    ${text}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Wait Until Element Is Visible    ${locator}    ${G_等待超时时间}
+    Wait Until Keyword Succeeds    ${G_等待超时时间}    1s    YunnexLibrary.Input Text    ${locator}    ${text}

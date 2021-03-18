@@ -1,0 +1,1287 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt
+
+*** Keywords ***
+加载个人请求部分
+    [Arguments]    ${shop_id}    ${mobile}
+    ${shop_serial}    数据库.通过商户id获取商户serial    ${shop_id}
+    ${openid}    数据库.通过手机号和商户id查找用户openId    ${mobile}    ${shop_id}
+    Add Request Header    User-Agent    Mozilla/5.0 (iPhone; CPU iPhone OS 11_0_3 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Mobile/15A432 MicroMessenger/6.6.1 NetType/WIFI Language/zh_CN
+    Add Request Header    Cookie    ${shop_serial}=${openid};
+
+选择门店
+    [Arguments]    ${shopBranchName}=${Z_shopBranchName}
+    Set Global Variable    ${G_branchName}    ${shopBranchName}
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    Set Global Variable    ${G_shopBranchID}    ${shopBranchId}
+
+门店列表
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_menu_menu_list
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+用户信息
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_smart_shop_get_member_status
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+获取菜品productId
+    ${productId}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/productId
+    ${productId}    Replace String    ${productId}    "    ${EMPTY}
+    [Return]    ${productId}
+
+获取菜品productId2
+    ${productId2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/productId
+    ${productId2}    Replace String    ${productId2}    "    ${EMPTY}
+    [Return]    ${productId2}
+
+获取菜品skuid
+    ${skuId}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/skuId
+    [Return]    ${skuId}
+
+获取菜品skuid2
+    ${skuId2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/skuId
+    [Return]    ${skuId2}
+
+获取会员id
+    ${customerId}    Get Json Value    ${G_RESPONSE_BODY}    /response/customerId
+    [Return]    ${customerId}
+
+获取门店id
+    ${branchId}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/branchId
+    [Return]    ${branchId}
+
+再获取桌台id
+    ${tableId}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/tableId
+    [Return]    ${tableId}
+
+获取桌台名称
+    ${tablename}    Get Json Value    ${G_RESPONSE_BODY}    /response/table/name
+    ${tablename}    Replace String    ${tablename}    "    ${EMPTY}
+    [Return]    ${tablename}
+
+单个菜品详情
+    [Arguments]    ${productId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_comment_list
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /productId    ${productId}
+    微信端_智慧餐厅_http.加载个人请求部分    ${Z_商户id}    ${Z_phone}    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+获取菜品名称goodsName
+    ${goodsName}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/goodsName
+    ${goodsName}    Replace String    ${goodsName}    "    ${EMPTY}
+    [Return]    ${goodsName}
+
+获取菜品名称goodsName2
+    ${goodsName2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/goodsName
+    ${goodsName2}    Replace String    ${goodsName2}    "    ${EMPTY}
+    [Return]    ${goodsName2}
+
+获取分类id_categoryId
+    ${categoryId}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/categoryId
+    [Return]    ${categoryId}
+
+获取分类id_categoryId2
+    ${categoryId2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/categoryId
+    [Return]    ${categoryId2}
+
+获取菜品原价信息
+    ${originalPrice}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/originalPrice
+    ${originalPrice}    Replace String    ${originalPrice}    "    ${EMPTY}
+    [Return]    ${originalPrice}
+
+获取菜品原价信息2
+    ${originalPrice2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/originalPrice
+    [Return]    ${originalPrice2}
+
+获取会员价
+    ${memberPrice}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/memberPrice
+    ${memberPrice}    Replace String    ${memberPrice}    "    ${EMPTY}
+    [Return]    ${memberPrice}
+
+清除购物车
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_del_all
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+获取加菜后信息
+    [Arguments]    ${goods_name1}    ${goods_name2}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferential2
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name1}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name1}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=4    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${results2}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name2}'    ${DB_CANYIN_CONNECTION}
+    ${product_id0}    set variable    ${results2[0][0]}
+    ${results3}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name2}' AND g.product_id='${product_id0}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=4    ${DB_CANYIN_CONNECTION}
+    ${goodsId2}    set variable    ${results3[0][0]}
+    ${results4}    查询sql    SELECT g.member_price FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name2}' AND g.product_id='${product_id0}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=4    ${DB_CANYIN_CONNECTION}
+    ${memberprice}    set variable    ${results4[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId2}"
+    修改Json格式的请求Body    /items/1/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/memberPrice    "${memberprice}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId2}"
+    修改Json格式的请求Body    /items/1/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice2}"
+    修改Json格式的请求Body    /items/1/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId2}"
+    修改Json格式的请求Body    /items/1/skuId    "${skuId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName2}"
+    修改Json格式的请求Body    /items/1/goodsItemName    "${goodsName}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+获取shoppingId1
+    ${shoppingId1}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/id
+    [Return]    ${shoppingId1}
+
+获取shoppingId2
+    ${shoppingId2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/1/id
+    [Return]    ${shoppingId2}
+
+获取goodsId1
+    ${goodsId1}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/goodsId
+    [Return]    ${goodsId1}
+
+获取goodsId2
+    ${goodsId2}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/1/goodsId
+    [Return]    ${goodsId2}
+
+获取桌台id
+    ${tableId}    Get Json Value    ${G_RESPONSE_BODY}    /response/cyShoppingCart/tableId
+    [Return]    ${tableId}
+
+获取17单号
+    ${orderId}    Get Json Value    ${G_RESPONSE_BODY}    /response/orderId
+    ${orderId}    Replace String    ${orderId}    "    ${EMPTY}
+    [Return]    ${orderId}
+
+获取20单号
+    ${zbOrderId}    Get Json Value    ${G_RESPONSE_BODY}    /response/zbOrderId
+    ${zbOrderId}    Replace String    ${zbOrderId}    "    ${EMPTY}
+    [Return]    ${zbOrderId}
+
+点击查看订单详情
+    [Arguments]    ${zbOrderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_smart_shop_shop_serial_id
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Url携带的参数    /orderId    ${zbOrderId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message"
+
+.
+
+先付款主流程_菜品原价
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_菜品原价    ${Z_智慧餐厅商品1}    ${Z_qrcode}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息    ${Z_智慧餐厅商品1}    ${goodsId}
+    微信端_智慧餐厅_http.创建订单    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${originalPrice}
+    微信端_智慧餐厅_http.确定支付--原价支付    ${zbOrderId}
+    [Return]    ${orderId}    ${zbOrderId}
+
+加入购物车_菜品原价
+    [Arguments]    ${goods_name}    ${qrcode}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_create
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=4 AND g.del_flag=0    ${DB_CANYIN_CONNECTION}
+    ${results2}    查询sql    SELECT * FROM xiaoer_desk_qrcode WHERE branch_id='${G_shopBranchID}' AND qrcode ='${qrcode}'    ${DB_MARKETING_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${tableId}    set variable    ${results2[0][4]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /goodsId    "${goodsId}"
+    修改Json格式的请求Body    /tableId    "${tableId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+点击选好了
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_query_list
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+获取购物车优惠信息
+    [Arguments]    ${goods_name}    ${goodsId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferentialh
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' \ AND g.branch_id ='${G_shopBranchID}' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /tradeFee    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /items/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /openId    "${G_OPENID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+创建订单
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_order
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /table/id    ${tableId}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /table/name    "${tablename}"
+    修改Json格式的请求Body    /goods/0/openId    "${G_OPENID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+提交订单
+    [Arguments]    ${orderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_order_post
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /orderId    ${orderId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+储值卡支付
+    [Arguments]    ${zbOrderId}    ${payFee}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_pay_v2_get_user_cards
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    shopBranchId    ${G_shopBranchID}
+    修改Url携带的参数    shopId    ${G_SHOP_ID}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    orderId    ${zbOrderId}
+    修改Url携带的参数    tradeFee    ${payFee}
+    修改Url携带的参数    openId    ${G_OPENID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+确定支付
+    [Arguments]    ${zbOrderId}    ${itemId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_pay_v2_card_pay_confirm
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    productOrderId    ${zbOrderId}
+    修改Url携带的参数    shopId    ${G_SHOP_ID}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    yhCodeList    ${itemId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+确定支付--原价支付
+    [Arguments]    ${zbOrderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_pay_v2_card_pay_confirm
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    productOrderId    ${zbOrderId}
+    修改Url携带的参数    shopId    ${G_SHOP_ID}
+    修改Url携带的参数    openId    ${G_OPENID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+先付款主流程_菜品会员价
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.点击选好了
+    微信端_智慧餐厅_http.二次加入购物车_菜品会员价    ${Z_智慧餐厅商品2}    ${Z_qrcode}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息    ${Z_智慧餐厅商品2}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    ${itemId}    微信端_智慧餐厅_http.获取营销活动itemId
+    微信端_智慧餐厅_http.创建订单_会员价菜品    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    ${payFee}    Evaluate    int(${originalPrice})-int(${deduct})
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${payFee}
+    微信端_智慧餐厅_http.确定支付    ${zbOrderId}    ${itemId}
+    [Return]    ${orderId}    ${zbOrderId}
+
+二次加入购物车_菜品会员价
+    [Arguments]    ${goods_name}    ${qrcode}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_create2
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=4    ${DB_CANYIN_CONNECTION}
+    ${results2}    查询sql    SELECT * FROM xiaoer_desk_qrcode WHERE branch_id='${G_shopBranchID}' AND qrcode ='${qrcode}'    ${DB_MARKETING_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${tableId}    set variable    ${results2[0][4]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /goodsId    "${goodsId}"
+    修改Json格式的请求Body    /tableId    "${tableId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+创建订单_会员价菜品
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderrs
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /table/id    ${tableId}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /table/name    "${tablename}"
+    微信端_智慧餐厅_http.加载个人请求部分    ${G_商户id}    ${Z_phone}
+    发送请求
+    验证请求响应状态    200
+
+.....
+
+先付款主流程_菜品特价
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_特价菜品    ${Z_智慧餐厅商品3}    ${Z_qrcode}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    sleep    1s
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取特价菜品优惠信息    ${Z_智慧餐厅商品3}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    ${itemId}    微信端_智慧餐厅_http.获取营销活动itemId
+    微信端_智慧餐厅_http.创建订单_特价菜    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}    ${Z_智慧餐厅商品3}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    ${payFee}    Evaluate    int(${originalPrice})-int(${deduct})
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${payFee}
+    微信端_智慧餐厅_http.确定支付    ${zbOrderId}    ${itemId}
+    [Return]    ${orderId}    ${zbOrderId}
+
+加入购物车_特价菜品
+    [Arguments]    ${goods_name}    ${qrcode}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_create2
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=4    ${DB_CANYIN_CONNECTION}
+    ${results2}    查询sql    SELECT * FROM xiaoer_desk_qrcode WHERE branch_id='${G_shopBranchID}' AND qrcode ='${qrcode}'    ${DB_MARKETING_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${tableId}    set variable    ${results2[0][4]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /goodsId    "${goodsId}"
+    修改Json格式的请求Body    /tableId    "${tableId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+获取特价菜品优惠信息
+    [Arguments]    ${goods_name}    ${goodsId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferentiall
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' \ AND g.branch_id ='${G_shopBranchID}' AND g.channel=4    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /tradeFee    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+创建订单_特价菜
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}    ${goodsName}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderr
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /table/id    ${tableId}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /usableBenefits/0/reduction    "${deduct}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/deduct    "${deduct}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /table/name    "${tablename}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+........
+
+后付款主流程_原价菜品
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_菜品原价    ${Z_智慧餐厅商品1}    ${Z_qrcode1}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息    ${Z_智慧餐厅商品1}    ${goodsId}
+    微信端_智慧餐厅_http.创建订单    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    [Return]    ${orderId}
+
+后付款主流程_会员价菜品
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    Comment    微信端_智慧餐厅_http.点击选好了    ${Z_商户id}    ${Z_shopBranchName1}
+    微信端_智慧餐厅_http.二次加入购物车_菜品会员价    ${Z_智慧餐厅商品2}    ${Z_qrcode1}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息    ${Z_智慧餐厅商品2}    ${goodsId}
+    微信端_智慧餐厅_http.创建订单_会员价菜品    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+
+后付款主流程_特价菜品
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_特价菜品    ${Z_智慧餐厅商品3}    ${Z_qrcode1}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取特价菜品优惠信息    ${Z_智慧餐厅商品3}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    微信端_智慧餐厅_http.创建订单_特价菜    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}    ${Z_智慧餐厅商品3}
+
+快餐主流程_原价菜品_堂食
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_菜品原价    ${Z_智慧餐厅商品1}    ${Z_qrcode2}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息    ${Z_智慧餐厅商品1}    ${goodsId}
+    微信端_智慧餐厅_http.快餐创建订单_堂食    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${originalPrice}
+    微信端_智慧餐厅_http.确定支付--原价支付    ${zbOrderId}
+    [Return]    ${orderId}
+
+快餐主流程_原价菜品_外带
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_菜品原价    ${Z_智慧餐厅商品1}    ${Z_qrcode2}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    sleep    1s
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息    ${Z_智慧餐厅商品1}    ${goodsId}
+    微信端_智慧餐厅_http.快餐创建订单_外带    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${originalPrice}
+    微信端_智慧餐厅_http.确定支付--原价支付    ${zbOrderId}
+    [Return]    ${orderId}
+
+快餐主流程_会员价菜品
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    Comment    微信端_智慧餐厅_http.点击选好了    ${Z_商户id}    ${Z_shopBranchName2}
+    微信端_智慧餐厅_http.二次加入购物车_菜品会员价    ${Z_智慧餐厅商品2}    ${Z_qrcode2}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取购物车优惠信息-会员价    ${Z_智慧餐厅商品2}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    ${itemId}    微信端_智慧餐厅_http.获取营销活动itemId
+    微信端_智慧餐厅_http.快餐创建订单_会员价菜品    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    ${payFee}    Evaluate    int(${originalPrice})-int(${deduct})
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${payFee}
+    微信端_智慧餐厅_http.确定支付    ${zbOrderId}    ${itemId}
+    [Return]    ${orderId}
+
+快餐主流程_特价菜品
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.加入购物车_特价菜品    ${Z_智慧餐厅商品3}    ${Z_qrcode2}
+    ${tableId}    微信端_智慧餐厅_http.获取桌台id
+    sleep    1s
+    微信端_智慧餐厅_http.点击选好了
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    ${tablename}    微信端_智慧餐厅_http.获取桌台名称
+    微信端_智慧餐厅_http.获取特价菜品优惠信息    ${Z_智慧餐厅商品3}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    ${itemId}    微信端_智慧餐厅_http.获取营销活动itemId
+    微信端_智慧餐厅_http.快餐创建订单_特价菜品    ${goodsId}    ${shoppingId}    ${shoppingId}    ${tableId}    ${Z_智慧餐厅商品3}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    ${payFee}    Evaluate    int(${originalPrice})-int(${deduct})
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${payFee}
+    微信端_智慧餐厅_http.确定支付    ${zbOrderId}    ${itemId}
+    [Return]    ${orderId}
+
+快餐创建订单_堂食
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderk
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+快餐创建订单_外带
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderk
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /fast/dineType    2
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+快餐创建订单_特价菜品
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}    ${goodsName}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderrk
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /usableBenefits/0/reduction    "${deduct}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/deduct    "${deduct}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+快餐创建订单_会员价菜品
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}    ${tableId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderrsk
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    微信端_智慧餐厅_http.加载个人请求部分    ${G_商户id}    ${Z_phone}
+    发送请求
+    验证请求响应状态    200
+
+-----------
+
+微信外卖主流程_菜品原价
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.微信外卖_门店列表
+    微信端_智慧餐厅_http.微信外卖加入购物车_菜品原价    ${Z_智慧餐厅商品1}    ${Z_qrcode2}
+    微信端_智慧餐厅_http.点击选好了_微信外卖
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    微信端_智慧餐厅_http.微信外卖获取购物车优惠信息    ${Z_智慧餐厅商品1}    ${goodsId}
+    微信端_智慧餐厅_http.微信外卖创建订单    ${goodsId}    ${shoppingId}    ${shoppingId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.微信外卖提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${originalPrice}
+    微信端_智慧餐厅_http.微信外卖确定支付    ${zbOrderId}
+    [Return]    ${orderId}    ${zbOrderId}
+
+微信外卖主流程_菜品会员价
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.微信外卖_门店列表
+    微信端_智慧餐厅_http.微信外卖加入购物车_菜品会员价    ${Z_智慧餐厅商品2}    ${Z_qrcode2}
+    微信端_智慧餐厅_http.点击选好了_微信外卖
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    微信端_智慧餐厅_http.微信外卖收货地址
+    微信端_智慧餐厅_http.微信外卖获取购物车优惠信息-会员价    ${Z_智慧餐厅商品2}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    ${itemId}    微信端_智慧餐厅_http.获取营销活动itemId
+    微信端_智慧餐厅_http.微信外卖创建订单-会员价    ${goodsId}    ${shoppingId}    ${shoppingId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.微信外卖提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    ${payFee}    Evaluate    int(${originalPrice})-int(${deduct})
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${payFee}
+    微信端_智慧餐厅_http.微信外卖确定支付    ${zbOrderId}
+    [Return]    ${orderId}
+
+微信外卖主流程_菜品特价
+    微信端_智慧餐厅_http.用户信息
+    ${customerId}    微信端_智慧餐厅_http.获取会员id
+    微信端_智慧餐厅_http.微信外卖_门店列表
+    微信端_智慧餐厅_http.微信外卖加入购物车_菜品特价    ${Z_智慧餐厅商品3}    ${Z_qrcode2}
+    微信端_智慧餐厅_http.点击选好了_微信外卖
+    ${shoppingId}    微信端_智慧餐厅_http.获取shopping Id1
+    ${goodsId}    微信端_智慧餐厅_http.获取goods Id1
+    ${goodsName}    微信端_智慧餐厅_http.获取菜品名称goodsName
+    ${categoryId}    微信端_智慧餐厅_http.获取分类id_categoryId
+    ${originalPrice}    微信端_智慧餐厅_http.获取菜品原价信息
+    ${skuId}    微信端_智慧餐厅_http.获取菜品skuid
+    ${productId}    微信端_智慧餐厅_http.获取菜品productId
+    ${branchId}    微信端_智慧餐厅_http.获取门店id
+    微信端_智慧餐厅_http.微信外卖收货地址
+    微信端_智慧餐厅_http.微信外卖获取购物车优惠信息-特价    ${Z_智慧餐厅商品3}    ${goodsId}
+    ${deduct}    微信端_智慧餐厅_http.获取特价优惠金额deduct
+    ${itemId}    微信端_智慧餐厅_http.获取营销活动itemId
+    微信端_智慧餐厅_http.微信外卖创建订单-特价    ${goodsId}    ${shoppingId}    ${shoppingId}
+    ${orderId}    微信端_智慧餐厅_http.获取17单号
+    微信端_智慧餐厅_http.微信外卖提交订单    ${orderId}
+    ${zbOrderId}    微信端_智慧餐厅_http.获取20单号
+    ${payFee}    Evaluate    int(${originalPrice})-int(${deduct})
+    微信端_智慧餐厅_http.储值卡支付    ${zbOrderId}    ${payFee}
+    微信端_智慧餐厅_http.微信外卖确定支付    ${zbOrderId}
+    [Return]    ${orderId}
+
+微信外卖_门店列表
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_menu_menu_listw
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+微信外卖加入购物车_菜品原价
+    [Arguments]    ${goods_name}    ${qrcode}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_createw
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID} ' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${results2}    查询sql    SELECT * FROM xiaoer_desk_qrcode WHERE branch_id='${G_shopBranchID} ' AND qrcode ='${qrcode}'    ${DB_MARKETING_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${tableId}    set variable    ${results2[0][4]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /goodsId    "${goodsId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+微信外卖加入购物车_菜品会员价
+    [Arguments]    ${goods_name}    ${qrcode}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_createwh
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${results2}    查询sql    SELECT * FROM xiaoer_desk_qrcode WHERE branch_id='${G_shopBranchID}' AND qrcode ='${qrcode}'    ${DB_MARKETING_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${tableId}    set variable    ${results2[0][4]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /goodsId    "${goodsId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+微信外卖加入购物车_菜品特价
+    [Arguments]    ${goods_name}    ${qrcode}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_shopping_cart_createt
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' AND g.branch_id ='${G_shopBranchID}' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${results2}    查询sql    SELECT * FROM xiaoer_desk_qrcode WHERE branch_id='${G_shopBranchID}' AND qrcode ='${qrcode}'    ${DB_MARKETING_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    ${tableId}    set variable    ${results2[0][4]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /goodsId    "${goodsId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+点击选好了_微信外卖
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_shopping_cart_query_listw
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /source    7
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+微信外卖获取购物车优惠信息
+    [Arguments]    ${goods_name}    ${goodsId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferentialw
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' \ AND g.branch_id ='${G_shopBranchID} ' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /tradeFee    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /items/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖获取购物车优惠信息-会员价
+    [Arguments]    ${goods_name}    ${goodsId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferentialwh
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' \ AND g.branch_id ='${G_shopBranchID}' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /tradeFee    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /items/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖获取购物车优惠信息-特价
+    [Arguments]    ${goods_name}    ${goodsId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferentialwt
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' \ AND g.branch_id ='${G_shopBranchID}' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /tradeFee    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /items/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖收货地址
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_take_out_address_list
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+微信外卖创建订单
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderw
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    Comment    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖创建订单-会员价
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderwh
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    Comment    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖创建订单-特价
+    [Arguments]    ${goodsId}    ${id}    ${shoppingId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_orderwt
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /goods/0/goodsId    ${goodsId}
+    修改Json格式的请求Body    /goods/0/id    ${id}
+    修改Json格式的请求Body    /shoppingId/0    ${shoppingId}
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId}"
+    Comment    修改Json格式的请求Body    /goods/0/tableId    ${tableId}
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖提交订单
+    [Arguments]    ${orderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_order_postw
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /orderId    ${orderId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+微信外卖确定支付
+    [Arguments]    ${zbOrderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_pay_v2_card_pay_confirmw
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    productOrderId    ${zbOrderId}
+    修改Url携带的参数    shopId    ${G_SHOP_ID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+查看微信外卖设备端详情
+    [Arguments]    ${orderId}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-api-pos_canyin_wmporder_item
+    修改Json格式的请求Body    /id    ${orderId}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+微信外卖在设备端已读处理
+    [Arguments]    ${orderId}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-api-pos_canyin_wmporder_sureAction
+    修改Json格式的请求Body    /id    ${orderId}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+微信外卖在设备端拉取取消订单原因
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-api-pos_canyin_wmporder_getCancelReason
+    Comment    修改Json格式的请求Body    /orderId    ${orderId}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+微信外卖在设备端已读处理后取消订单
+    [Arguments]    ${orderId}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-api-pos_canyin_wmporder_cancelAction
+    修改Json格式的请求Body    /id    ${orderId}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+微信外卖订单开始配送
+    [Arguments]    ${orderId}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-api-pos_canyin_wmporder_deliverAction
+    修改Json格式的请求Body    /id    ${orderId}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+微信外卖订单已送达
+    [Arguments]    ${orderId}
+    创建http上下文    ${G_POS_HOST_TEST}
+    通用-http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-api-pos_canyin_wmporder_finishAction
+    修改Json格式的请求Body    /id    ${orderId}
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+微信外卖c端查看详情
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_orders_order_detailw
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /zbOrderId    "${zbOrderId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+---------------
+
+获取特价优惠金额deduct
+    ${deduct}    Get Json Value    ${G_RESPONSE_BODY}    /response/market/usableBenefits/0/specialGoods/0/deduct
+    [Return]    ${deduct}
+
+设备端确认订单返回c端加菜后获取订单详情
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_orders_order_detail
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /orderId    "${orderId}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+设备端确认订单返回c端加菜后获取订单详情的应付金额
+    ${money}    Get Json Value    ${G_RESPONSE_BODY}    /response/cyOrderDto/cyPaymentListModel/paymentStatus/money
+    [Return]    ${money}
+
+再次获取会员id
+    ${customerId}    Get Json Value    ${G_RESPONSE_BODY}    /response/goods/0/customerId
+    [Return]    ${customerId}
+
+设备端确认订单返回c端加菜后提交订单
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_orders_add_food
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    修改Json格式的请求Body    /orderId    "${orderId}"
+    修改Json格式的请求Body    /shoppingId    [${shoppingId1}]
+    修改Json格式的请求Body    /goods/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /goods/0/categoryId    "${categoryId1}"
+    修改Json格式的请求Body    /goods/0/skuId    "${skuId1}"
+    修改Json格式的请求Body    /goods/0/goodsId    "${goodsId1}"
+    修改Json格式的请求Body    /goods/0/goodsName    "${goodsName1}"
+    修改Json格式的请求Body    /goods/0/memberPrice    "${memberPrice}"
+    修改Json格式的请求Body    /goods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/id    "${shoppingId1}"
+    修改Json格式的请求Body    /goods/0/productId    "${productId}"
+    修改Json格式的请求Body    /goods/0/tableId    "${tableId}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/skuId    "${skuId1}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/categoryId    "${categoryId1}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/goodsItemName    "${goodsName1}"
+    修改Json格式的请求Body    /usableBenefits/0/specialGoods/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /goods/0/openId    "${G_OPENID}"
+    微信端-通用-http.加载微信端公共请求部分    #这里取的是公共变量Vars的值
+    发送请求
+    验证请求响应状态    200
+
+订单详情
+    [Arguments]    ${zbOrderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_orders_order_info
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    ${zbOrderId}    Set Variable    "${zbOrderId}"
+    修改Json格式的请求Body    /zbOrderId    ${zbOrderId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+提交订单评价
+    [Arguments]    ${orderId}    ${goods_name}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_comment_save_comment
+    ${results1}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${productId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}    #shop_serial \ \ 取接口库里的url请求参数
+    修改Url携带的参数    branchId    ${G_shopBranchID}    #shopBranchId 取接口库里的url请求参数
+    Comment    ${orderId}    Set Variable    "${orderId}"
+    修改Json格式的请求Body    /orderId    "${orderId}"
+    修改Json格式的请求Body    /orderGoods/0/productId    "${productId}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    message":"success
+
+门店账号登录
+    创建http上下文    ${Z_SHOP_CHUPING_HOST_TEST}
+    通用-http.加载接口模板    SHOP_CHUPING_智慧餐厅    index_chuping_login
+    修改Json格式的请求Body    /branchshop    "${Z_branchshop}"
+    修改Json格式的请求Body    /operator    "${Z_operator}"
+    修改Json格式的请求Body    /password    "${Z_password}"
+    发送请求
+    #获取JSESSIONID
+    ${Cookie}    ExtendHttpLibrary.Get Response Header    Set-Cookie
+    @{words}    Split String    ${Cookie[0]}
+    Set Global Variable    ${G_CHUPING_JSESSIONID}    @{words}
+
+获取营销活动itemId
+    ${itemId}    Get Json Value    ${G_RESPONSE_BODY}    /response/market/usableBenefits/0/benefitItems/0/itemId
+    ${itemId}    Replace String    ${itemId}    "    ${EMPTY}
+    [Return]    ${itemId}
+
+获取购物车优惠信息-会员价
+    [Arguments]    ${goods_name}    ${goodsId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_cmpaign_preferentialh
+    ${results0}    查询sql    SELECT * FROM cy_products WHERE product_name='${goods_name}'    ${DB_CANYIN_CONNECTION}
+    ${product_id}    set variable    ${results0[0][0]}
+    ${results1}    查询sql    SELECT g.id FROM cy_products p,cy_goods g WHERE p.product_name='${goods_name}' AND g.product_id='${product_id}' \ AND g.branch_id ='${G_shopBranchID}' AND g.channel=6    ${DB_CANYIN_CONNECTION}
+    ${goodsId}    set variable    ${results1[0][0]}
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /items/0/id    "${goodsId}"
+    修改Json格式的请求Body    /customerId    "${customerId}"
+    修改Json格式的请求Body    /items/0/goodsItemName    "${goodsName}"
+    修改Json格式的请求Body    /items/0/categoryId    "${categoryId}"
+    修改Json格式的请求Body    /items/0/originalPrice    "${originalPrice}"
+    修改Json格式的请求Body    /tradeFee    "${originalPrice}"
+    修改Json格式的请求Body    /items/0/skuId    "${skuId}"
+    修改Json格式的请求Body    /items/0/branchId    "${G_shopBranchID}"
+    修改Json格式的请求Body    /openId    "${G_OPENID}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+b端确认订单返回c端后获取订单详情后c端发起支付
+    [Arguments]    ${orderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_order_post
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /orderId    ${orderId}
+    修改Json格式的请求Body    /payMoney    "${money}"
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+b端确认订单返回c端后获取20订单
+    ${zbOrderId}    Get Json Value    ${G_RESPONSE_BODY}    /response/cyOrderDto/zbOrderId
+    ${zbOrderId}    Replace String    ${zbOrderId}    "    ${EMPTY}
+    [Return]    ${zbOrderId}
+
+c端支付完后手动结账
+    [Arguments]    ${orderId}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_canyin-web-mobile_wxcanyin_order_check_order
+    修改Url携带的参数    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    branchId    ${G_shopBranchID}
+    修改Json格式的请求Body    /orderId    ${orderId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200

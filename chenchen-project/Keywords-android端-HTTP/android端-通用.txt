@@ -1,0 +1,92 @@
+*** Settings ***
+Resource          0-android端-http.txt
+
+*** Keywords ***
+加载公共请求部分
+    Add Request Header    DeviceId    ${A_android_DEVICE_ID}
+    Add Request Header    Token    ${A_android_TOKEN}
+    Add Request Header    OperatorId    ${A_android_OPERATOR_ID}
+    Add Request Header    ProductVersion    ${A_android_PRODUCT_VERSION}
+
+通用结果验证
+    [Arguments]    ${code}=4001    ${success}=true
+    ${ret_code}    Get Json Value    ${G_RESPONSE_BODY}    /code
+    ${ret_success}    Get Json Value    ${G_RESPONSE_BODY}    /success
+    Should Contain    ${ret_code}    ${code}
+    Should Contain    ${ret_success}    ${success}
+
+查询sql数据
+    [Arguments]    ${sql}    ${db}=${DB_SAOFU_CONNECTION}
+    Connect To Database Using Custom Params    pymysql    ${db}
+    @{results}    Run Keyword And Continue On Failure    Query    ${sql}
+    Disconnect From Database
+    [Return]    @{results}
+
+通过商户id获取商户serial
+    [Arguments]    ${shop_id}
+    ${result}    查询sql数据    SELECT SERIAL FROM `shop` WHERE id = '${shop_id}'
+    ${serial}    Set Variable    ${result[0][0]}
+    [Return]    ${serial}
+
+通过shop_id和mobile查询openID
+    [Arguments]    ${mobile}    ${shop_id}
+    ${result}    查询sql数据    SELECT channel_serial FROM `customer` WHERE mobile='${mobile}' AND shop_id = '${shop_id}'
+    Comment    ${openId}    Set Variable    ${result[0][0]}
+    ${openId}    Run Keyword If    '${mobile}'!=''    Set Variable    ${result[0][0]}
+    [Return]    ${openId}
+
+通过商户id和会员id查询customer_id
+    [Arguments]    ${shop_id}    ${mobile}
+    ${result}    查询sql数据    SELECT customer_id FROM customer_account \ WHERE shop_id='${shop_id}' AND member_id IN ( SELECT member_id FROM customer WHERE shop_id=${shop_id} AND mobile='${mobile}' );
+    Comment    ${openId}    Set Variable    ${result[0][0]}
+    ${customer_id}    Run Keyword If    '${mobile}'!=''    Set Variable    ${result[0][0]}
+    [Return]    ${customer_id}
+
+加载微信端公共请求
+    Add Request Header    User-Agent    Mozilla/5.0 (Linux; Android 4.4.2; MIX Build/MMB29M) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/30.0.0.0 Mobile Safari/537.36 MicroMessenger/6.5.10.1080 NetType/WIFI Language/zh_CN
+    Add Request Header    Cookie    ${A_android_SERIAL}=${A_android_OPENID}; zbotoken=${A_android_OPENID}
+
+扫码支付返回结果
+    [Arguments]    ${shopId}=${A_android_SHOP_ID}    ${openId}=${A_android_OPENID}    ${customerId}=${A_customerId}    ${productOrderId}=${A_productOrderId}    ${cardType}=1
+    Comment    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    创建http上下文    ${A_WEIXIN_HOST_TEST}    https    True
+    通用-http.加载接口模板    APP_支付    index_pay_confirm
+    修改Url携带的参数    customerId    ${customerId}
+    修改Url携带的参数    openId    ${openId}
+    修改Url携带的参数    productOrderId    ${productOrderId}
+    修改Url携带的参数    shopId    ${shopId}
+    修改Url携带的参数    cardType    ${cardType}
+    加载微信端公共请求
+    发送请求
+    验证请求响应状态
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /result
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    log    ${order_id}
+
+查找会员优惠券
+    ${result}    查询sql数据    selct * from
+    ${card_num}    Set Variable    ${result[0][0]}
+    [Return]    ${card_num}
+
+根据菜品名称查找价格
+    [Arguments]    ${fruits_name}    ${Z_branch_id}    ${table_id}=${Z_table_id}
+    [Documentation]    ${Z_branch_id}门店id：1516663210
+    ${result}    查询sql数据    SELECT * FROM \ canyin.`cy_goods` LEFT JOIN canyin.`cy_products` ON `cy_goods`.product_id = `cy_products`.id WHERE `cy_products`.product_name = '${goods_name}' AND `cy_goods`.branch_id = '${Z_branch_id}' AND `cy_goods`.`channel`='5' AND `cy_goods`.`del_flag`='0';    ${DB_CANYIN_CONNECTION}
+    ${price}    Set Variable    ${result[0][10]}
+    [Return]    ${price}
+
+根据订单号查找价格
+    [Arguments]    ${order_num}
+    [Documentation]    ${Z_branch_id}门店id：1516663210
+    ${price}    查询sql数据    SELECT pay_fee FROM cy_order WHERE order_id = '${order_num}'    ${DB_CANYIN_CONNECTION}
+    [Return]    ${price}
+
+通过${shop_id}和"${mobile}"查询"${openID}"
+    ${result}    查询sql数据    SELECT channel_serial FROM `customer` WHERE mobile='${mobile}' AND shop_id = '${shop_id}'
+    Comment    ${openId}    Set Variable    ${result[0][0]}
+    ${openId}    Run Keyword If    '${mobile}'!=''    Set Variable    ${result[0][0]}
+    [Return]    ${openId}
+
+Test-case
+    通过

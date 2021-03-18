@@ -1,0 +1,35 @@
+*** Settings ***
+Library           Selenium2Library    run_on_failure=Selenium2Library.CapturePageScreenshot
+Library           DatabaseLibrary
+Library           OperatingSystem
+Library           DateTime
+Library           String
+Library           Collections
+Library           ExcelLibrary
+Library           MyLibrary/ExtendHttpLibrary.py
+Library           MyLibrary/ExtendAppniumLibrary.py
+Library           MyLibrary/ExtendExcelLibrary.py
+Resource          ../Vars/0-全局变量.txt
+Resource          通用-web.txt
+Resource          通用-app.txt
+Resource          通用-http.txt
+Resource          通用.txt
+Resource          表格.txt
+Resource          数据库.txt
+Resource          提示框.txt
+Resource          ../Keywords-综合管理平台-UI/0-综合管理平台.txt
+Resource          ../Keyworks-商户管理后台-UI/0-商户管理后台-UI.txt
+Resource          ../Keyworks-商户管理后台-HTTP/0-商户管理后台-http.txt
+Resource          ../Keywords-微信端-HTTP/0-微信端-HTTP.txt
+Resource          ../Keywords-微信端-UI/0-微信端-UI.txt
+Resource          ../Keywords-设备端-HTTP/0-设备端-http.txt
+Resource          ../Keywords-设备端-UI/0-设备端-ui.txt
+Resource          ../Keywords-开放平台-HTTP/0-开放平台-http.txt
+Library           AppiumLibrary    run_on_failure=AppiumLibrary.Capture Page Screenshot    # run_on_failure=AppiumLibrary.Capture Page Screenshot
+Resource          ../Keywords-android端-UI/0-android端-ui.txt
+Resource          ../Keywords-android端-HTTP/0-android端-http.txt
+Library           MyLibrary/YunnexLibrary.py
+Library           MyLibrary/AdbShell.py
+Library           MyLibrary/appium_server.py
+Library           MyLibrary/find_toast.py
+Library           MyLibrary/report.py

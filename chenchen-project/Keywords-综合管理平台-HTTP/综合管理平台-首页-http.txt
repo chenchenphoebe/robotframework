@@ -1,0 +1,16 @@
+*** Settings ***
+Resource          0-综合管理平台-http.txt
+
+*** Keywords ***
+登录
+    [Arguments]    ${username}=${G_平台账号[${G_综合管理平台测试环境}]}    ${password}=${G_平台密码[${G_综合管理平台测试环境}]}
+    创建http上下文    ${G_OEM_HOST_TEST}
+    通用-http.加载接口模板    OEM_首页    index_login
+    修改Url携带的参数    username    ${username}
+    修改Url携带的参数    password    ${password}
+    发送请求
+    #获取JSESSIONID
+    ${Cookie}    Get Response Header    Set-Cookie
+    @{words}    Split String    ${Cookie[0]}    OEMSESSION=
+    @{word}    Split String    @{words}[1]    ;
+    Set Global Variable    ${G_SHOP_JSESSIONID}    @{word}[0]

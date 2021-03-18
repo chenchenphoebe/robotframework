@@ -1,0 +1,51 @@
+*** Settings ***
+Resource          0-android端-http.txt
+
+*** Keywords ***
+登录
+    [Arguments]    ${device_id}=${A_设备Id}    ${product_version}=${A_软件版本}    ${branchAccount}=${A_门店账号}    ${operatorNumber}={A_设备操作员_编号}    ${password}=${A_设备操作员_密码}
+    创建http上下文    ${G_POS_HOST_TEST}    http    True
+    通用-http.加载接口模板    APP_首页    index_login
+    Add Request Header    DeviceId    ${device_id}
+    Add Request Header    ProductVersion    ${product_version}
+    修改Json格式的请求Body    /branchAccount    "${branchAccount}"
+    修改Json格式的请求Body    /operatorNumber    "${operatorNumber}"
+    修改Json格式的请求Body    /password    "${password}"
+    发送请求
+    #校验设备登录
+    验证请求响应状态
+    ${result}    Get Json Value By Path    /success
+    Should Be Equal As Strings    ${result}    true    < 设备登录不成功 >
+    #获取token
+    ${token}    Get Json Value By Path    /token
+    ${token}    Replace String    ${token}    "    ${EMPTY}
+    #获取operator
+    ${operator_id}    Get Json Value By Path    /operator/id
+    ${operatorname}    Get Json Value By Path    /operator/name
+    ${operatornumber}    Get Json Value By Path    /operator/number
+    ${operatornumber}    Replace String    ${operatornumber}    "    ${EMPTY}
+    #获取shopid
+    ${shopId}    Get Json Value By Path    /shopId
+    ${shopId}    Replace String    ${shopId}    "    ${EMPTY}
+    #保存设备信息
+    Set Global Variable    ${A_android_TOKEN}    ${token}
+    Set Global Variable    ${A_android_OPERATOR_ID}    ${operator_id}
+    Set Global Variable    ${A_android_DEVICE_ID}    ${device_id}
+    Set Global Variable    ${A_android_PRODUCT_VERSION}    ${product_version}
+    Set Global Variable    ${A_android_SHOP_ID}    ${shopId}
+
+获取openID
+    [Arguments]    ${appUnique_id}=${A_服务员_appUniqueId}
+    创建http上下文    ${G_POS_HOST_TEST}    http    True
+    通用-http.加载接口模板    APP_首页    index_device_registerAndBind
+    加载公共请求部分
+    Add Request Header    appUniqueId    ${appUnique_id}
+    发送请求
+    #校验设备登录
+    验证请求响应状态
+    ${result}    Get Json Value By Path    /success
+    Should Be Equal As Strings    ${result}    true    < 设备登录不成功 >
+    #获取clientid
+    ${clientId}    Get Json Value By Path    /clientId
+    #保存clientid
+    Set Global Variable    ${A_android_clientId}     ${clientId}

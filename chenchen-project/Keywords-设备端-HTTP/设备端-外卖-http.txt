@@ -1,0 +1,177 @@
+*** Settings ***
+Resource          0-设备端-http.txt
+
+*** Keywords ***
+外卖列表
+    [Arguments]    ${page}    ${status}    ${time}    # 1-待配送；2-待收货；3-交易完成；4-交易取消；5-新订单
+    [Documentation]    {"page":1（页码）,
+    ...    "status":3（# 1-待配送；2-待收货；3-交易完成；4-交易取消；5-新订单）,
+    ...    "time":1505899573776（时间戳）,
+    ...    "type":0}
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_list
+    加载设备端公共请求部分
+    修改json格式的请求body    /page    "${page}"
+    修改json格式的请求body    /status    "${status}"
+    修改json格式的请求body    /time    "${time}"
+    发送请求
+    验证请求响应状态
+
+外卖营业时间
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_getBusinessTime
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+外卖订单详情
+    [Arguments]    ${三方单号}    # 订单ID
+    [Documentation]    ID为第三方单号
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${id}    外卖-根据第三方单号查询到系统单号    ${三方单号}
+    加载接口模板    POS_外卖    index_wmporder_item
+    加载设备端公共请求部分
+    修改json格式的请求body    /id    "${id}"
+    发送请求
+    验证请求响应状态
+
+外卖订单确认
+    [Arguments]    ${三方单号}    # 订单ID
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${id}    外卖-根据第三方单号查询到系统单号    ${三方单号}
+    加载接口模板    POS_外卖    index_wmporder_sureAction
+    加载设备端公共请求部分
+    修改json格式的请求body    /id    "${id}"
+    发送请求
+    验证请求响应状态
+
+外卖取消原因
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_porder_cancalReason
+    set request header    Content-Length    0
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+外卖取消订单
+    [Arguments]    ${三方单号}
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${id}    外卖-根据第三方单号查询到系统单号    ${三方单号}
+    ${shop_id}    外卖-根据第三方订单ID查找所属商户ID    ${三方单号}
+    ${reason_ID}    商城-通过商户ID查找取消原因ID    ${shop_id}
+    加载接口模板    POS_外卖    index_wmporder_cancelAction
+    加载设备端公共请求部分
+    修改json格式的请求body    /id    "${id}"
+    修改json格式的请求body    /reasonId    "${reasonId}"
+    发送请求
+    验证请求响应状态
+
+外卖配送订单
+    [Arguments]    ${三方单号}
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${id}    外卖-根据第三方单号查询到系统单号    ${三方单号}
+    加载接口模板    POS_外卖    index_wmporder_deliverAction
+    加载设备端公共请求部分
+    修改json格式的请求body    /id    "${id}"
+    发送请求
+    验证请求响应状态
+
+外卖订单点击已送达
+    [Arguments]    ${三方单号}
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${id}    外卖-根据第三方单号查询到系统单号    ${三方单号}
+    加载接口模板    POS_外卖    index_wmporder_finishAction
+    加载设备端公共请求部分
+    修改json格式的请求body    /id    "${id}"
+    发送请求
+    验证请求响应状态
+
+外卖订单搜索
+    [Arguments]    ${searchKey}=搜索内容
+    [Documentation]    ${searchKey}（搜索内容）
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_finishAction
+    加载设备端公共请求部分
+    修改json格式的请求body    /searchKey    "${searchKey}"
+    发送请求
+    验证请求响应状态
+
+外卖门店详情
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_shop
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+改变营业状态
+    [Arguments]    ${platform}    ${runningStatus}
+    [Documentation]    {"platform":1(1-百度外卖；2-美团外卖；3-饿了么),"runningStatus":3（3-暂停营业；1-恢复营业）}
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_setBusinessStatus
+    加载设备端公共请求部分
+    修改json格式的请求body    /platform    "${platform}"
+    修改json格式的请求body    /runningStatus    "${runningStatus}"
+    发送请求
+    验证请求响应状态
+
+菜品分类列表
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_categoryList
+    加载设备端公共请求部分
+    发送请求
+    验证请求响应状态
+
+外卖分类详情
+    [Arguments]    ${username}    ${name}=分类名
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${categoryId}    外卖-通过商户ID和商品分类名查询分类ID    ${username}    ${name}
+    加载接口模板    POS_外卖    index_wmporder_dishList
+    加载设备端公共请求部分
+    修改json格式的请求body    /categoryId    "${categoryId}"
+    发送请求
+    验证请求响应状态
+
+外卖菜品搜索
+    [Arguments]    ${searchKey}
+    [Documentation]    searchKey(搜索值)
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_wmporder_order_search
+    加载设备端公共请求部分
+    修改json格式的请求body    /searchKey    "${searchKey}"
+    发送请求
+    验证请求响应状态
+
+外卖菜品详情
+    [Arguments]    ${cataname}=分类名称    ${goodsname}=商品名
+    [Documentation]    dishId(菜品id)
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${shopid}    ${branchid}    根据操作员ID查找到设备所属商户ID和门店ID
+    ${dish_Id}    外卖-根据商户ID、门店ID、分类名称、商品名称查询商品ID    ${shopid}    ${branchid}    ${cataname}    ${goodsname}
+    加载接口模板    POS_外卖    index_wmporder_dishDetail
+    加载设备端公共请求部分
+    修改json格式的请求body    /dishId    "${dish_Id}"
+    发送请求
+    验证请求响应状态
+
+改变外卖菜品状态
+    [Arguments]    ${actionType}    ${cataname}=分类名称    ${goodsname}=商品名
+    [Documentation]    actionType(2-估清，3-恢复售卖)
+    创建http上下文    ${G_POS_HOST_TEST}
+    ${shopid}    ${branchid}    根据操作员ID查找到设备所属商户ID和门店ID
+    ${dish_Id}    外卖-根据商户ID、门店ID、分类名称、商品名称查询商品ID    ${shopid}    ${branchid}    ${cataname}    ${goodsname}
+    加载接口模板    POS_外卖    index_wmporder_setDishStoreNum
+    加载设备端公共请求部分
+    修改json格式的请求body    /actionType    "${actionType}"
+    修改json格式的请求body    /dishId    "${dish_Id}"
+    发送请求
+    验证请求响应状态
+
+外卖订单统计
+    [Arguments]    ${date}
+    [Documentation]    data(时间戳)
+    创建http上下文    ${G_POS_HOST_TEST}
+    加载接口模板    POS_外卖    index_take_out_static_list
+    加载设备端公共请求部分
+    修改json格式的请求body    /date    "${date}"
+    发送请求
+    验证请求响应状态

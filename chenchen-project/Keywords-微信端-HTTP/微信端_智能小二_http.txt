@@ -1,0 +1,11 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt
+
+*** Keywords ***
+小二买单
+    通用-Http.创建http上下文    ${XR_HOST}    http    True
+    通用-Http.加载接口模板    WEIXIN_智能小二    index_xr_orderpay
+    修改Url携带的参数    qrcode    201806050132590710
+    微信端_支付_http.加载个人微信端请求
+    发送请求
+    验证请求响应状态    200

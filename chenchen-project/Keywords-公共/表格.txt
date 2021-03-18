@@ -1,0 +1,73 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+当前页码
+    [Arguments]    ${验证页码}=    ${表格类型}=类型一
+    ${当前页码}    Run Keyword If    "${表格类型}"=="类型一"    通用-web.长等待获取元素文本    xpath=//li[@class='currentPage disabled']/a
+    ${当前页码}    Run Keyword If    "${表格类型}"=="类型二"    通用-web.长等待获取元素文本    xpath=//a[@class='paginate_button current']
+    Run Keyword If    '${验证页码}'=''    Should Be Equal    ${当前页码}    ${验证页码}    验证的页码不正确
+    [Return]    ${当前页码}
+
+翻页查找数据
+    [Arguments]    ${table_locator}    ${src_data}    ${src_column}    ${表格类型}=类型一
+    log    按页查找，页码为 i,只找前10页
+    : FOR    ${i}    IN RANGE    1    11    #页数
+    \    log    查找第${i}页
+    \    ${row}    表格.通过已知列数据获取行号    ${table_locator}    ${src_data}    ${src_column}    不验证
+    \    ${data}    通用-web.长等待获取表格内容    ${table_locator}    ${row}    ${src_column}
+    \    ${status}    Run Keyword And Return Status    Should Contain    ${data}    ${src_data}
+    \    Exit For Loop If    '${status}'=='True'
+    \    log    第${i}页未找到，翻下一页
+    \    ${index}    Evaluate    int(${i})+1
+    \    选择页    ${table_locator}    ${index}    ${表格类型}
+    ${data}    通用-web.长等待获取表格内容    ${table_locator}    ${row}    ${src_column}
+    ${status}    Run Keyword And Return Status    Should Contain    ${data}    ${src_data}
+    Should Be Equal    '${status}'    'True'    前10页未找到数据
+    ${row_table}    Set Variable    ${row}
+    [Return]    ${row_table}
+
+获取表格行数
+    # 获取表格行数，等待5s，循环10次，每次0.5秒
+    : FOR    ${i}    IN RANGE    10
+    \    ${max_row}    Selenium2Library.Get Matching Xpath Count    xpath=//table/tbody/tr
+    \    Exit For Loop If    '${max_row}'!='0'
+    \    sleep    0.5s
+    Should Not Be Equal As Strings    ${max_row}    0    <表格5秒内未刷新出来>
+    [Return]    ${max_row}
+
+选择页
+    [Arguments]    ${table_locator}    ${page}    ${表格类型}=类型一
+    [Documentation]    page:页码
+    Run Keyword If    "${表格类型}"=="类型一"    通用-web.长等待点击元素    xpath=//li/a[text()='${page}']
+    Run Keyword If    "${表格类型}"=="类型二"    通用-web.长等待点击元素    xpath=//span/a[text()='${page}']
+    通用-web.长等待元素显示    ${table_locator}
+
+通过已知列数据查找其他列数据
+    [Arguments]    ${table_locator}    ${src_data}    ${src_column}    ${dic_column}
+    ${max_row}    表格.获取表格行数
+    ${row_table}    表格.通过已知列数据获取行号    ${table_locator}    ${src_data}    ${src_column}    验证数据
+    ${return_data}    通用-web.长等待获取表格内容    ${table_locator}    ${row_table}    ${dic_column}
+    [Return]    ${return_data}
+
+通过已知列数据获取行号
+    [Arguments]    ${table_locator}    ${src_data}    ${src_column}    ${is_verify}=
+    [Documentation]    is_verify:为了方便翻页验证
+    ${max_row}    表格.获取表格行数
+    log    按行轮询表格
+    : FOR    ${i}    IN RANGE    2    int(${max_row})+2
+    \    ${cell_data}    通用-web.长等待获取表格内容    ${table_locator}    ${i}    ${src_column}
+    \    ${status}    Run Keyword And Return Status    Should Contain    ${cell_data}    ${src_data}
+    \    Exit For Loop If    '${status}'=='True'
+    Run Keyword If    '${is_verify}'==''    Should Be Equal As Strings    ${cell_data}    ${src_data}
+    ${row_table}    Set Variable    ${i}
+    [Return]    ${row_table}
+
+长等待表格显示
+    [Arguments]    ${table_locator}
+    通用-web.长等待元素显示    ${table_locator}
+
+验证表格包含某个数据
+    [Arguments]    ${table_locator}    ${verify_data}=    ${row}=    ${column}=
+    ${ret_data}    通用-web.长等待获取表格内容    ${table_locator}    ${row}    ${column}
+    Run Keyword If    '${verify_data}'!=''    Should Be Equal    ${ret_data}    ${verify_data}

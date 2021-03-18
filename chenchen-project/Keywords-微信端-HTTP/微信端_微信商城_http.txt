@@ -1,0 +1,510 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt
+
+*** Keywords ***
+储值方式_完成支付
+    [Arguments]    ${order_id}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_card_pay
+    通用-http.修改Url携带的参数    openId    ${G_OPENID}
+    通用-http.修改Url携带的参数    productOrderId    ${order_id}
+    通用-http.修改Url携带的参数    shopId    ${G_SHOP_ID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    sleep    2s
+
+确认微信支付获取tradeOrderId
+    [Arguments]    ${order_id}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_wx_pay
+    通用-http.修改Url携带的参数    openId    ${G_OPENID}
+    通用-http.修改Url携带的参数    productOrderId    ${order_id}
+    通用-http.修改Url携带的参数    shopId    ${G_SHOP_ID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    sleep    2s
+    ${tradeOrderId}    Get Json Value    ${G_RESPONSE_BODY}    /tradeOrderId
+    ${tradeOrderId}    Replace String    ${tradeOrderId}    "    ${EMPTY}
+    [Return]    ${tradeOrderId}
+
+微信方式_完成支付
+    [Arguments]    ${tradeOrderId}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_wx_qtorder
+    修改Url携带的参数    tradeOrderId    ${tradeOrderId}
+    修改Url携带的参数    shopId    ${G_SHOP_ID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+填写配送信息
+    [Arguments]    ${provinceId}=440000    ${cityId}=440100    ${areaId}=440101    ${contact}=我是自动测的    ${mobile}=15011111111    ${detail}=自动填地址
+    ${customer_addr_id}    查询sql    SELECT id FROM `customer_addr` WHERE customer_id IN (SELECT id FROM `customer` WHERE mobile = '${G_MOBILE}' AND shop_id = '${G_SHOP_ID}') AND enabled = '1'    ${DB_SAOFU_CONNECTION}
+    : FOR    ${i}    IN RANGE    1
+    \    Exit For Loop If    '${customer_addr_id}'!='[]'
+    \    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    \    通用-http.加载接口模板    WEIXIN_微信商城    index_editaddr
+    \    通用-Http.修改Url    provinceId    ${provinceId}
+    \    通用-Http.修改Url    cityId    ${cityId}
+    \    修改Url携带的参数    areaId    ${areaId}
+    \    修改Url携带的参数    contact    ${contact}
+    \    修改Url携带的参数    mobile    ${mobile}
+    \    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    \    修改Url携带的参数    openId    ${G_OPENID}
+    \    修改Url携带的参数    detail    ${detail}
+    \    微信端-通用-http.加载微信端公共请求部分
+    \    发送请求
+    \    验证请求响应状态    200
+    \    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+商城下单
+    [Arguments]    ${orderType}    ${payType}    ${Goods_name}    ${standardId}=    ${remark}=    ${mallWxCustomerMsgList}=
+    [Documentation]    {orderType}
+    ...    1 \ ：指配送订单
+    ...    2 \ ：指自提订单
+    ...    4 \ ：指票券订单
+    ...
+    ...    ${payType}
+    ...    1 \ ：微信支付
+    ...    2 \ ：到店支付
+    ...    3 \ ：货到付款
+    ...    4 \ ：储值支付
+    ...    11:在线支付
+    ${mallGoodsId}    数据库.商城-通过商品名称获取商品id    ${Goods_name}
+    Run Keyword If    ${orderType} ==1    填写配送信息
+    ${fetchTime}    获取自提时间
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder
+    通用-Http.修改Url    orderType    ${orderType}
+    通用-Http.修改Url    payType    ${payType}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    amount    100
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    mallGoodsId    ${mallGoodsId}
+    修改Url携带的参数    remark    ${remark}
+    修改Url携带的参数    mallWxCustomerMsgList    ${mallWxCustomerMsgList}
+    修改Url携带的参数    standardId    ${standardId}
+    修改Url携带的参数    fetchTime    ${fetchTime}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+微餐饮购物车中添加商品
+    [Arguments]    ${Goods_name}    ${shopBranchName}    ${cateringType}=1    ${Amounts}=100    ${StandardIds}=0
+    [Documentation]    ${cateringType}=1微餐饮
+    ...    ${cateringType}=2扫码下单
+    ${mallGoodsId}    数据库.商城-通过商品名称获取商品id    ${Goods_name}
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_catering_tocart
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    Ids    ${mallGoodsId}
+    修改Url携带的参数    shopBranchId    ${shopBranchId}    #购车列表id
+    修改Url携带的参数    cateringType    ${cateringType}
+    修改Url携带的参数    Amounts    ${Amounts}
+    修改Url携带的参数    StandardIds    ${StandardIds}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+获取餐饮购物车列表
+    [Arguments]    ${shopBranchName}    ${cateringType}=1
+    [Documentation]    ${cateringType}=1微餐饮
+    ...    ${cateringType}=2扫码下单
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_catering_cart_list
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    shopBranchId    ${shopBranchId}    #购车列表id
+    修改Url携带的参数    cateringType    ${cateringType}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Comment    ${G_RESPONSE_BODY}    Replace String    ${G_RESPONSE_BODY}    [    ${EMPTY}
+    Comment    ${G_RESPONSE_BODY}    Replace String    ${G_RESPONSE_BODY}    ]    ${EMPTY}
+    ${cartIds}    Get Json Value    ${G_RESPONSE_BODY}    /0/id
+    [Return]    ${cartIds}
+
+外卖配送_微信方式_下单
+    [Arguments]    ${cartIds}    ${remark}=
+    [Documentation]    \#适用下单单规格商品
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder_catering_deliver_card
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    cartIds    ${cartIds}
+    修改Url携带的参数    remark    ${remark}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+外卖配送_储值方式_下单
+    [Arguments]    ${cartIds}    ${remark}=
+    [Documentation]    \#适用下单单规格商品
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder_catering_deliver_card
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    cartIds    ${cartIds}
+    修改Url携带的参数    remark    ${remark}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+外卖配送_到付方式_下单
+    [Arguments]    ${cartIds}    ${remark}=
+    [Documentation]    \#适用下单单规格商品
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder_catering_deliver_cash
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    cartIds    ${cartIds}
+    修改Url携带的参数    remark    ${remark}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+店内订单_微信方式_下单
+    [Arguments]    ${cartIds}    ${shopBranchName}    ${cShopDeskId}    ${remark}=
+    [Documentation]    \#适用下单单规格商品
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder_catering_Inner_card
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    cartIds    ${cartIds}
+    修改Url携带的参数    cShopDeskId    ${cShopDeskId}
+    修改Url携带的参数    shopBranchId    ${shopBranchId}
+    修改Url携带的参数    remark    ${remark}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+店内订单_储值方式_下单
+    [Arguments]    ${cartIds}    ${shopBranchName}    ${cShopDeskId}    ${remark}=
+    [Documentation]    \#适用下单单规格商品
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder_catering_Inner_card
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    cartIds    ${cartIds}
+    修改Url携带的参数    cShopDeskId    ${cShopDeskId}
+    修改Url携带的参数    shopBranchId    ${shopBranchId}
+    修改Url携带的参数    remark    ${remark}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+店内订单_到付方式_下单
+    [Arguments]    ${cartIds}    ${shopBranchName}    ${cShopDeskId}    ${remark}=
+    [Documentation]    \#适用下单单规格商品
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder_catering_inner_cash
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    cartIds    ${cartIds}
+    修改Url携带的参数    cShopDeskId    ${cShopDeskId}
+    修改Url携带的参数    shopBranchId    ${shopBranchId}
+    修改Url携带的参数    remark    ${remark}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach/orderId
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+预约下单
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_booking
+    修改Url携带的参数    openId    ${G_OPENID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}
+
+确认收货
+    [Arguments]    ${order_id}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_confirm_receipt
+    通用-http.修改Url携带的参数    id    ${order_id}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+取消订单
+    [Arguments]    ${order_id}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cancel
+    通用-http.修改Url携带的参数    id    ${order_id}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+获取自提时间
+    ${date} =    Get Current Date    result_format=datetime    increment=00:30:00
+    ${fetchTime}    Set Variable    ${date.year}-${date.month}-${date.day}+${date.hour}%3A${date.minute}
+    [Return]    ${fetchTime}
+
+获取自提门店
+    [Arguments]    ${shopBranchName}=${G_shopBranchName}    ${provinceId}=440000    ${cityId}=440300    ${areaId}=440304    ${contact}=我是自动测的    ${mobile}=15011111111
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    ${customerFetchAddrId}    数据库.商城-通过会员手机号查自提id
+    : FOR    ${i}    IN RANGE    1
+    \    Exit For Loop If    '${customerFetchAddrId}'!='None'
+    \    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    \    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    \    通用-http.加载接口模板    WEIXIN_微信商城    index_edit_fetch_addr
+    \    通用-Http.修改Url    provinceId    ${provinceId}
+    \    通用-Http.修改Url    cityId    ${cityId}
+    \    修改Url携带的参数    areaId    ${areaId}
+    \    修改Url携带的参数    contact    ${contact}
+    \    修改Url携带的参数    mobile    ${mobile}
+    \    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    \    修改Url携带的参数    openId    ${G_OPENID}
+    \    修改Url携带的参数    shopBranchId    ${shopBranchId}
+    \    微信端-通用-http.加载微信端公共请求部分
+    \    发送请求
+    \    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+获取订单列表
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_plist
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    openId    ${G_OPENID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+获取订单详情
+    [Arguments]    ${orderId}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    true
+    通用-http.加载接口模板    WEIXIN_微信商城    index_porder_item
+    通用-Http.修改Url    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    id    ${orderId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    ${orderId}
+
+订单详情校验订单状态
+    [Arguments]    ${orderId}    ${status}
+    微信端_微信商城_http.获取订单详情    ${orderId}
+    ${result}    Get Lines Containing String    ${G_RESPONSE_BODY}    mallProductOrder
+    ${待付款}    Set Variable    id=1,value=待付款
+    ${待确认}    Set Variable    id=2,value=待确认
+    ${待配送-待付款}    Set Variable    id=3,value=待配送(未付款)
+    ${待配送}    Set Variable    id=4,value=待配送
+    ${待收货-未付款}    Set Variable    id=5,value=待收货(未付款)
+    ${待收货}    Set Variable    id=6,value=待收货
+    ${已付款}    Set Variable    id=7,value=已付款
+    ${商户取消}    Set Variable    id=81,value=交易关闭
+    ${用户取消}    Set Variable    id=82,value=交易关闭
+    ${异常关闭}    Set Variable    id=90,value=交易关闭
+    ${过期自动关闭}    Set Variable    id=91,value=交易关闭
+    ${交易完成}    Set Variable    id=100,value=交易完成
+    ${超时完成}    Set Variable    id=101,value=交易完成
+    ${顾客确认收货}    Set Variable    id=102,value=交易完成
+    Should Contain    ${result}    ${${status}}
+
+打开商城首页
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_mall
+    通用-http.修改url    shopSerial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+打开商城全部商品列表
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_all_goods
+    通用-http.修改url    shopSerial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+打开商城分类商品列表
+    [Arguments]    ${cate_name}=${G_Cate_Name}
+    ${cateId}    数据库.商城-通过分类名称获取分类id    ${cate_name}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_all_goods_cate
+    通用-http.修改url    shopSerial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    cateId    ${cateId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+链接打开商品详情页
+    [Arguments]    ${Goods_name}=${G_现有商品1}
+    ${mallGoodsId}    数据库.商城-通过商品名称获取商品id    ${Goods_name}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_goods_item
+    修改Url携带的参数    id    ${mallGoodsId}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+打开微信外卖门店列表
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_catering_shopBranchlist
+    通用-http.修改url    shopSerial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+打开微信外卖商品列表
+    [Arguments]    ${shopBranchName}=${G_shopBranchName}
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_catering_flist
+    修改Url携带的参数    shopBranchId    ${shopBranchId}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+打开店内商品列表
+    [Arguments]    ${shopBranchName}=${G_shopBranchName}    ${cShopDeskId}=${G_cShopDeskId}
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_catering_flist
+    修改Url携带的参数    cShopDeskId    ${cShopDeskId}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    shopBranchId    ${shopBranchId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+商城去评价
+    [Arguments]    ${orderId}
+    ${date} =    Get Current Date    result_format=datetime
+    ${time}    Set Variable    ${date.year}-${date.month}-${date.day}+${date.hour}%3A${date.minute}%3A${date.second}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_saveCommentList
+    修改Url携带的参数    orderId    ${orderId}
+    修改Url携带的参数    goodsCommentList    %5B%7B%22orderId%22%3A%22${orderId}%22%2C%22goodsId%22%3A27253%2C%22standardId%22%3A0%2C%22goodsImgUrl%22%3A%22http%3A%2F%2Fres.test-a.saofu.cn%2Fsaofu%2Fupload%2Fimage%2F2017%2F11%2F01%2Ffcaf9d65-09c4-4115-8c3a-893d7777db08.jpg%22%2C%22comment%22%3A%22%E5%93%88%E5%93%88${time}%22%2C%22type%22%3A0%2C%22anonymous%22%3A0%7D%5D
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+商城查看评价
+    [Arguments]    ${orderId}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_watchEvaluate
+    修改url    orderId    ${orderId}
+    修改url    serial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+退款申请
+    [Arguments]    ${orderId}    ${applyCase}=
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_initiateRefund
+    修改Url携带的参数    id    ${orderId}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    applyCase    ${applyCase}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+打开购物车页
+    通用-http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cart
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+商城-加入购物车
+    [Arguments]    ${Goods_name}    ${amount}=1    ${mallWxCustomerMsgDto}=    ${standardId}=
+    ${mallGoodsId}    数据库.商城-通过商品名称获取商品id    ${Goods_name}
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_addtocart
+    修改Url携带的参数    openId    ${G_OPENID}
+    修改Url携带的参数    serial    ${G_SHOP_SERIAL}
+    修改Url携带的参数    mallGoodsId    ${mallGoodsId}
+    修改Url携带的参数    amount    ${amount}
+    修改Url携带的参数    mallWxCustomerMsgDto    ${mallWxCustomerMsgDto}
+    修改Url携带的参数    standardId    ${standardId}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+商城下单(支付)
+    [Arguments]    ${orderType}    ${payType}    ${shop_id}    ${Goods_name}    ${mobile}    ${remark}=
+    ...    ${mallWxCustomerMsgList}=    ${standardId}=
+    [Documentation]    {orderType}
+    ...    1 \ ：指配送订单
+    ...    2 \ ：指自提订单
+    ...    4 \ ：指票券订单
+    ...
+    ...    ${payType}
+    ...    1 \ ：微信支付
+    ...    2 \ ：到店支付
+    ...    3 \ ：货到付款
+    ...    4 \ ：储值支付
+    ...    11:在线支付
+    ${shop_serial}    数据库.通过商户id获取商户serial    ${shop_id}
+    ${mallGoodsId}    数据库.商城-通过商品名称获取商品id    ${Goods_name}
+    ${openId}    数据库.通过手机号和商户id查找用户openId    ${mobile}    ${shop_id}
+    ${fetchTime}    获取自提时间
+    创建http上下文    ${G_WEIXIN_HOST_TEST}    http
+    通用-http.加载接口模板    WEIXIN_微信商城    index_cmorder
+    通用-Http.修改Url    orderType    ${orderType}
+    通用-Http.修改Url    payType    ${payType}
+    修改Url携带的参数    serial    ${shop_serial}
+    修改Url携带的参数    amount    1
+    Run Keyword If    '${openId}'!='None'    修改Url携带的参数    openId    ${openId}
+    修改Url携带的参数    mallGoodsId    ${mallGoodsId}
+    修改Url携带的参数    remark    ${remark}
+    修改Url携带的参数    mallWxCustomerMsgList    ${mallWxCustomerMsgList}
+    修改Url携带的参数    standardId    ${standardId}
+    修改Url携带的参数    fetchTime    ${fetchTime}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+商城下单获取orderId
+    ${order_id}    Get Json Value    ${G_RESPONSE_BODY}    /attach
+    ${order_id}    Replace String    ${order_id}    "    ${EMPTY}
+    [Return]    ${order_id}

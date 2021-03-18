@@ -1,0 +1,2 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt

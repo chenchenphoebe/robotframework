@@ -1,0 +1,7 @@
+*** Settings ***
+Resource          ../Keywords-公共/0-自定义关键字.txt
+Resource          服务员APP-首页.txt
+Resource          服务员APP-通用.txt
+Resource          服务员APP-我的.txt
+Resource          服务员APP-点餐.txt
+Resource          服务员app-点餐-详细操作.txt

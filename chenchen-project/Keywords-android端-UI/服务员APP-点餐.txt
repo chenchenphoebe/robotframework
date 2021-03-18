@@ -1,0 +1,436 @@
+*** Settings ***
+Resource          0-android端-ui.txt
+
+*** Keywords ***
+进入页面
+    [Arguments]    ${text}
+    服务员APP-通用.长等待点击文本    ${text}
+    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/tv_mid    ${text}
+
+选择桌台
+    [Arguments]    ${area}    ${desk_name}
+    Comment    ${stats}    Run Keyword And Return Status    AppiumLibrary.Wait Until Page Contains Element    com.yunnex.smartcanteenchaos:id/tv_mid
+    Comment    Run Keyword If    '${stats}'=='true'    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_right' and @text='快餐模式']    #xpath=//android.widget.LinearLayout/android.widget.TextView/[contains(@index,1)]]
+    Comment    Comment    ...    AND    AppiumLibrary.Click Text    柔软    #FrameLayout是textview1和textview2的父布局 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ 通过FrameLayout定位textview1和textview2
+    Comment    sleep    1
+    Comment    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/tv_title    快餐模式
+    Comment    ${desk_name}    AppiumLibrary.Get Text    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/tv_right')]    #xpath=//*[contains(@text, '快餐模式')]
+    Comment    Comment    ${stats}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/indicator
+    Comment    Comment    Run Keyword If    '${stats}'=='true'    log    请在商户后台配置桌台
+    Comment    Comment    ...    ELSE IF    '${stats}'=='False'    AppiumLibrary.Click Text    ${area}
+    Comment    Comment    ...    AND    AppiumLibrary.Click Text    ${desk_name}
+    AppiumLibrary.Click Text    ${area}    #//*[contains(@text,${area})]
+    sleep    2
+    AppiumLibrary.Click Text    ${desk_name}    #xpath='//*[contains(@text,${desk_name})]'
+
+开台
+    [Arguments]    ${text}
+    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/bt_one    ${text}
+    Comment    ${desk_name}    AppiumLibrary.Get Text    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/bt_one')]
+    Comment    log    ${desk_name}
+    ${num}    AppiumLibrary.Get Text    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/et_num')]
+    Run Keyword If    int(${num})>0    AppiumLibrary.Click Button    ${text}    ELSE    AppiumLibrary.Click Button    index=2
+    ...    AND    AppiumLibrary.Click Button    ${text}
+
+点菜
+    [Arguments]    ${fruits_name}
+    Comment    服务员APP-通用.长等待点击元素    com.yunnex.smartcanteenchaos:id/rl_add
+    服务员APP-通用.长等待点击元素    ${fruits_name}
+    sleep    1
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/btn_submit
+
+点待起
+    服务员APP-通用.长等待点击文本    待起
+    @{elements}    AppiumLibrary.Get Webelements    com.yunnex.smartcanteenchaos:id/cb
+    ${total_fruits}    Get Length    ${elements}    #需要将@{elements}写成${elements}
+    Run Keyword If    ${total_fruits} >= 1    AppiumLibrary.Click Element    @{elements}[0]    ELSE    log    'no fruits in list'
+    服务员APP-通用.长等待点击文本    确定
+    sleep    %{U_APP_WAITTING_TIME}
+    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_qicai
+
+点确认下单
+    服务员APP-通用.长等待点击文本    确认下单
+    sleep    1
+    AppiumLibrary.Page Should Contain Text    去结账
+
+直接点菜
+    [Arguments]    ${text_sec_order}    ${fruits_name}    ${U_APP_WAIT_OR_NOT_Y}=
+    AppiumLibrary.Click Button    ${text_sec_order}
+    点菜    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_dish_name' and @text='${fruits_name}']
+    #是否要待起
+    Run Keyword If    '${U_APP_WAIT_OR_NOT_Y}'=='待起'    点待起    ELSE    log    不需要待起
+    点确认下单
+
+开台选菜
+    [Arguments]    ${text}    ${fruits_name}    ${U_APP_WAIT_OR_NOT_Y}=
+    开台    ${text}
+    点菜    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_dish_name' and @text='${fruits_name}']
+    #是否要待起
+    Run Keyword If    '${U_APP_WAIT_OR_NOT_Y}'=='待起'    点待起    ELSE    log    不需要待起
+    点确认下单
+
+点菜或撤销开台
+    [Arguments]    ${first_fruits_name}    ${U_APP_WAIT_OR_NOT_Y}=
+    ${pass_or_not}    Run Keyword And Return Status    直接点菜    去点菜    ${first_fruits_name}    ${U_APP_WAIT_OR_NOT_Y}
+    Run Keyword If    '${pass_or_not}'=='False'    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/bt_two' and @text='撤销开台']
+
+下单
+    [Arguments]    ${tab_text}    ${area}    ${desk_name}    ${text}    ${first_fruits_name}    ${U_APP_WAIT_OR_NOT_Y}=
+    进入页面    ${tab_text}
+    选择桌台    ${area}    ${desk_name}
+    ${status1}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/bt_one' and @text='开台']
+    ${status2}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/bt_one' and @text='去点菜']
+    Run Keyword If    '${status1}'=='True'    开台选菜    ${text}    ${first_fruits_name}    ${U_APP_WAIT_OR_NOT_Y}    ELSE IF
+    ...    '${status2}'=='True'    点菜或撤销开台    ${first_fruits_name}    ${U_APP_WAIT_OR_NOT_Y}    ELSE    log
+    ...    已经完成点菜
+
+更多操作
+    [Arguments]    ${text}    ${start_x}    ${start_y}
+    AppiumLibrary.Click Element    //android.widget.Button[@text='更多']
+    AppiumLibrary.Click Element At Coordinates    ${start_x}    ${start_y}
+    sleep    1
+    Comment    AppiumLibrary.Element Name Should Be    android:id/title    ${text}
+
+选择撤单原因
+    AppiumLibrary.Get Text    com.yunnex.smartcanteenchaos:id/tv_refund_order_reason_tips    #获取撤单标题
+    AppiumLibrary.Click Element    //android.widget.RadioButton[@resource-id='com.yunnex.smartcanteenchaos:id/cb_retreat_order_reason' and @text='1']    #定位撤单原因
+    AppiumLibrary.Click Button    index=1    #无法根据name点击
+    sleep    1
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/btn_positive
+    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_order_detail_order_cancel
+
+撤单操作
+    [Arguments]    ${text}
+    更多操作    ${text}    300    530
+    选择撤单原因
+    : FOR    ${x}    IN RANGE    5
+    \    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_right
+    \    log    ${status}
+    \    Run Keyword If    '${status}'=='False'    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/back_icon    ELSE    Exit For Loop
+    \    log    outside loop
+
+确定撤单
+    [Arguments]    ${text}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Text    去结账
+    Run Keyword If    '${status}'=='True'    撤单操作    ${text}    ELSE    log    无法进行撤单操作
+
+起菜操作
+    [Arguments]    ${text}
+    更多操作    ${text}    181    669
+    sleep    %{U_APP_WAITTING_TIME}
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/cb_all
+    AppiumLibrary.Click Element    //android.widget.Button[@text='确定']
+    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/tv_order_detail_goods_qicai    起菜
+
+确定起菜
+    [Arguments]    ${text}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_order_detail_goods_qicai
+    Run Keyword If    '${status}'=='True'    起菜操作    ${text}    ELSE    AppiumLibrary.Click Element    //android.widget.Button[@text='取消']
+
+确定催菜
+    [Arguments]    ${text}
+    更多操作    ${text}    169    586
+    sleep    %{U_APP_WAITTING_TIME}
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/cb_all
+    AppiumLibrary.Click Element    //android.widget.Button[@text='确定']
+    Comment    Find Toast    催菜成功
+
+确定转台
+    [Arguments]    ${text}    ${turn_desk}
+    更多操作    ${text}    161    836
+    sleep    %{U_APP_WAITTING_TIME}
+    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/tv_mid    ${text}
+    #转台
+    ${desk_name}    AppiumLibrary.Get Text    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${turn_desk}']
+    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${turn_desk}']
+    AppiumLibrary.Click Element    //android.widget.Button[@text='确认']
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/btn_positive
+    Run Keyword If    '${status}' == 'True'    Run Keywords    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/btn_positive    AND    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@text='再想想']    ELSE IF    '${status}' == 'False'    Run Keyword    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name
+    ...    ${desk_name}    #    Find Toast    转台成功
+
+查看订单或回到桌台
+    [Arguments]    ${check_or_back}=
+    Run Keyword If    '${check_or_back}'=='查看订单'    Run Keywords    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_positive' and @text='查看订单']    AND    AppiumLibrary.Element Should Contain Text
+    ...    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name    ${COPY_DESK_NAME}    ELSE IF    '${check_or_back}'!='查看订单'    Run Keywords    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_negative' and @text='回到桌台']    AND    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name    ${A_DESK_NAME}
+
+复制桌台
+    [Arguments]    ${check_or_back}=
+    AppiumLibrary.Click Element    //android.widget.LinearLayout/android.widget.Button[@text='确认']
+    sleep    %{U_APP_WAITTING_TIME}
+    AppiumLibrary.Click Element    //android.widget.Button[@text='确认下单']
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Text    当前桌台已下单，提交失败
+    Run Keyword If    '${status}' == 'True'    Run Keyword    查看订单或回到桌台    ${check_or_back}    ELSE IF    '${status}' == 'False'
+    ...    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name    ${COPY_DESK_NAME}
+
+确定复制桌台
+    [Arguments]    ${text}    ${copy_desk}    ${copy_or_not}=复制桌台    ${check_or_back}=
+    更多操作    ${text}    177    756
+    sleep    %{U_APP_WAITTING_TIME}
+    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/tv_mid    复制菜品到指定桌台并下单
+    Comment    ${desk_name}    AppiumLibrary.Get Text    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${copy_desk}']
+    Comment    ${COPY_DESK_NAME}    Set Global Variable    ${desk_name}
+    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${copy_desk}']
+    Run Keyword If    '${copy_or_not}'!='复制桌台'    Run Keyword    AppiumLibrary.Click Element    //android.widget.Button[@text='再想想']    ELSE IF    '${copy_or_not}'=='复制桌台'
+    ...    Run Keyword    复制桌台    ${check_or_back}    ELSE    log    出错了
+
+开子台操作
+    [Arguments]    ${text}    ${fruits_name}
+    更多操作    ${text}    152    921
+    sleep    %{U_APP_WAITTING_TIME}
+    Comment    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/bt_one    开子台
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Not Contain Element    去结账
+    ${son_desk_name}    Catenate    SEPARATOR=_    ${A_DESK_NAME}    1
+    Run Keyword If    '${status}' == 'True'    Run Keywords    开台选菜    ${text}    ${fruits_name}    AND
+    ...    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name    ${son_desk_name}    ELSE    log    开子台失败
+    [Return]    ${son_desk_name}
+
+并单操作
+    [Arguments]    ${desk_name}    ${A_ADD_FRUITNAME}
+    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${desk_name}']
+    AppiumLibrary.Click Element    //android.widget.Button[@text='确认']
+    Comment    Find Toast    并单成功
+    sleep    %{U_APP_WAITTING_TIME}
+    @{elements}    AppiumLibrary.Get Webelements    com.yunnex.smartcanteenchaos:id/tv_order_detail_goods_name
+    ${total}    Get Length    ${elements}
+    Comment    @{Comment}    Click Element    @{elements}[2]
+    ${fruits0}    AppiumLibrary.Get Text    @{elements}[0]
+    ${fruits1}    AppiumLibrary.Get Text    @{elements}[1]
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Element Text Should Be    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name    桌号：${desk_name}
+    Run Keyword If    '${status}' == 'True' and ${total}>=2 and '${fruits0}' =='${A_ADD_FRUITNAME}' and'${fruits1}' =='${A_ADD_FRUITNAME}'    log    并单成功    ELSE IF    '${status}' == 'False'    Run Keywords
+    ...    AppiumLibrary.Click Element    //android.widget.Button[@text='返回']    AND    AppiumLibrary.Click Element    //android.widget.Button[@text='再想想']
+
+确认并单
+    [Arguments]    ${son_desk_name}    ${text}    ${desk_name}    ${A_ADD_FRUITNAME}
+    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_table_name    ${son_desk_name}
+    更多操作    ${text}    165    1003
+    sleep    %{U_APP_WAITTING_TIME}
+    Comment    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/bt_one    开子台
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_table    ${desk_name}
+    Run Keyword If    '${status}' == 'True'    Run Keyword    并单操作    ${desk_name}    ${A_ADD_FRUITNAME}    ELSE
+    ...    AppiumLibrary.Click Element    //android.widget.Button[@text='再想想']
+    #run keywords关键字使用时注意
+
+锁台解锁
+    [Arguments]    ${text}
+    更多操作    ${text}    171    1091
+
+锁台操作
+    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_positive' and @text='确定']
+    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_lock
+    #锁台不能进行加菜
+    AppiumLibrary.Click Element    //android.widget.Button[@text='加菜']
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Element Text Should Be    //android.widget.TextView[@text='桌台已锁,请先解锁桌台']    桌台已锁,请先解锁桌台
+    Run Keyword If    '${status}' == 'True'    Run Keyword    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_positive' and @text='知道了']    ELSE    log
+    ...    锁台失败
+
+确定锁台
+    [Arguments]    ${text}    ${lock_or_not}=
+    锁台解锁    ${text}
+    sleep    %{U_APP_WAITTING_TIME}
+    Comment    AppiumLibrary.Element Name Should Be    com.yunnex.smartcanteenchaos:id/bt_one    开子台
+    Run Keyword If    '${text}'!= '锁台'    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_negative' and @text='返回']    ELSE    Run Keyword    锁台操作
+
+确定解锁操作
+    [Arguments]    ${text}
+    锁台解锁    ${text}
+    AppiumLibrary.Page Should Not Contain Element    com.yunnex.smartcanteenchaos:id/tv_lock
+
+加菜操作
+    [Arguments]    ${text}    ${fruits_name}
+    AppiumLibrary.Click Button    ${text}
+    点菜    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_dish_name' and @text='${fruits_name}']
+    服务员APP-通用.长等待点击文本    确认加菜
+    sleep    1
+    AppiumLibrary.Page Should Contain Text    大龙虾
+
+验证会员操作
+    [Arguments]    ${text}    ${phone}=${A_phone_number}
+    AppiumLibrary.Click Button    ${text}
+    服务员APP-通用.长等待点击元素    com.yunnex.smartcanteenchaos:id/btn_get_member
+    服务员APP-通用.长等待输入文本    com.yunnex.smartcanteenchaos:id/et_input    ${phone}
+    AppiumLibrary.Click Button    验证
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/btn_submit
+    Run Keyword If    '${status}'=='True'    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/btn_submit    ELSE    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/back_icon
+
+使用优惠操作
+    [Arguments]    ${text}
+    AppiumLibrary.Click Button    ${text}
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/tv_manual_order_offer    #全单活动
+    sleep    1
+    AppiumLibrary.Click Element    xpath=//android.support.v7.widget.RecyclerView/android.widget.RelativeLayout[1]
+    AppiumLibrary.Click Button    确定
+
+订单完成并返回
+    [Arguments]    ${element}
+    : FOR    ${x}    IN RANGE    5
+    \    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    ${element}    #com.yunnex.smartcanteenchaos:id/tv_right
+    \    Run Keyword If    '${status}'=='False'    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/back_icon    ELSE    Exit For Loop
+
+去结账
+    Comment    AppiumLibrary.Element Should Not Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_other_real_price    ￥00.00
+    AppiumLibrary.Click Button    去结账
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/btn_payment_dialog_pay
+    sleep    1
+    ${exact_price}    AppiumLibrary.Get Text    xpath=//android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/price']
+    log    ${exact_price}
+    ${productOrderId}    AppiumLibrary.Get Text    xpath=//android.widget.LinearLayout[@resource-id='com.yunnex.smartcanteenchaos:id/pay_content']/android.widget.RelativeLayout[3]/android.widget.TextView[2]    #无法定位到订单
+    Set Global Variable    ${A_productOrderId}    ${productOrderId}
+    log    ${A_productOrderId}
+
+返回到菜单页
+    Comment    服务员APP-通用.长等待点击元素    com.yunnex.smartcanteenchaos:id/dialog_qrcode_close
+    sleep    5
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/dialog_qrcode_close
+    Run Keyword If    '${status}'=='True'    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/dialog_qrcode_close    ELSE    log    未弹出二维码
+    AppiumLibrary.Click Button    确定
+    订单完成并返回    com.yunnex.smartcanteenchaos:id/tv_right
+
+实付为0去结单
+    AppiumLibrary.Click Button    结单
+    sleep    2
+    订单完成并返回    com.yunnex.smartcanteenchaos:id/tv_right
+
+实付完成结单
+    去结账
+    扫码支付返回结果
+    返回到菜单页
+
+根据实际金额去支付
+    : FOR    ${i}    IN RANGE    5
+    \    AppiumLibrary.Click A Point    310    997
+    \    AppiumLibrary.Swipe By Percent    50    90    50    10    1000
+    \    ...    #滑动页面查找元素
+    \    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_order_detail_other_real_price
+    \    Exit For Loop If    '${status}'=='True'
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Element Should Contain Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_other_real_price    ￥0.00
+    Run Keyword If    '${status}'=='False'    实付完成结单    ELSE    实付为0去结单
+
+菜品活动优惠
+    [Arguments]    ${discount}    ${discount_kind}
+    使用优惠-选择优惠种类    ${discount}    ${discount_kind}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Element Text Should Be    com.yunnex.smartcanteenchaos:id/iv_discount_list_empty_info_msg    当前无菜品活动
+    Run Keyword If    '${status}' == 'True'    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/back_icon    ELSE    log    选择优惠菜品
+    ...    #无赠菜优惠
+
+优惠券优惠
+    [Arguments]    ${discount}    ${discount_kind}    ${check_discount_card}    ${card_num}
+    AppiumLibrary.Click Element    //android.widget.Button[@text='${discount}']
+    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_coupons' and @text='${discount_kind}']
+    sleep    %{U_APP_WAITTING_TIME}
+    ${status}    Run Keyword And Ignore Error    AppiumLibrary.Page Should Contain Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_verification' and @text='手动输入']    #此页面为动态页面或许定位不到元素
+    Run Keyword If    '${status[0]}' == 'PASS'    使用优惠券    ${check_discount_card}    ${card_num}    ELSE    Run Keywords
+    ...    AppiumLibrary.Press Keycode    4    AND    Find Toast    #点击返回按钮
+
+全单活动优惠
+    [Arguments]    ${discount}    ${discount_kind}
+    使用优惠-选择优惠种类    ${discount}    ${discount_kind}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Element Text Should Be    com.yunnex.smartcanteenchaos:id/iv_discount_list_empty_info_msg    当前无全单活动
+    Run Keyword If    '${status}'=='True'    Run Keyword    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/back_icon    ELSE IF    '${status}'=='False'
+    ...    确定使用全单活动    ELSE    出错啦
+
+获取订单页面-订单编号
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/tv_order_detail_other_order_id
+    ${order_num}    Run Keyword If    '${status}'=='True'    AppiumLibrary.Get Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_other_order_id    ELSE    Run Keywords
+    ...    AppiumLibrary.Swipe By Percent    50    90    50    10    1000
+    ...    AND    AppiumLibrary.Get Text    com.yunnex.smartcanteenchaos:id/tv_order_detail_other_order_id
+    [Return]    ${order_num}
+
+菜品手动折扣优惠
+    [Arguments]    ${discount}    ${discount_kind}    ${fruit_name}    ${num_or_percent}    ${reason}    ${discount_or_not}=折扣
+    使用优惠-选择优惠种类    ${discount}    ${discount_kind}
+    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_select_dish_discount_name' and @text='${fruit_name}']
+    Comment    ${real_price}    根据菜品名称查找价格    ${fruit_name}    %{U_APP_BRANCH_ID}
+    Run Keyword If    '${discount_or_not}'!='折扣'    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_cancel' and @text='返回']    ELSE    Run Keywords    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='下一步']    AND    让价或折扣    ${num_or_percent}    3    ${reason}
+
+预设优惠操作
+    [Arguments]    ${discount}    ${discount_kind}    ${discount_son_kind}
+    使用优惠-选择优惠种类    ${discount}    ${discount_kind}
+    AppiumLibrary.Page Should Contain Element    //android.widget.RadioButton[@resource-id='com.yunnex.smartcanteenchaos:id/rb_order_discount_default' and @text='${discount_son_kind}']
+    @{elements}    AppiumLibrary.Get Webelements    com.yunnex.smartcanteenchaos:id/cb_discount_enable_check
+    ${lenth}    Get Length    ${elements}
+    Run Keyword If    ${lenth}>=1    Run Keywords    AppiumLibrary.Click Element    @{elements}[0]    AND    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='确定']    ELSE    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_cancel' and @text='取消']
+    AppiumLibrary.Page Should Contain Element    //android.widget.RelativeLayout[@resource-id='com.yunnex.smartcanteenchaos:id/rl_order_detail_cy_root']
+
+手动优惠操作
+    [Arguments]    ${discount}    ${discount_kind}    ${discount_son_kind}    ${num_or_percent}    ${reason}    ${discount_or_not}=折扣
+    使用优惠-选择优惠种类    ${discount}    ${discount_kind}    #使用优惠-全单手动折扣
+    AppiumLibrary.Page Should Contain Element    //android.widget.RadioButton[@resource-id='com.yunnex.smartcanteenchaos:id/rb_order_discount_manual' and @text='${discount_son_kind}']    \    #手动优惠
+    AppiumLibrary.Click Element    //android.widget.RadioButton[@resource-id='com.yunnex.smartcanteenchaos:id/rb_order_discount_manual' and @text='${discount_son_kind}']
+    #获取订单页面的order-id
+    Comment    ${order_num}    获取订单页面-订单编号
+    #获取订单总价
+    Comment    ${real_price}    根据订单号查找价格    ${order_num}
+    Run Keyword If    '${discount_or_not}'!='折扣'    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_cancel' and @text='返回']    ELSE    让价或折扣    ${num_or_percent}
+    ...    3    ${reason}
+
+免单操作
+    [Arguments]    ${discount}    ${discount_kind}    ${discount_son_kind}    ${element}
+    使用优惠-选择优惠种类    ${discount}    ${discount_kind}
+    AppiumLibrary.Page Should Contain Element    //android.widget.RadioButton[@resource-id='com.yunnex.smartcanteenchaos:id/rb_order_discount_free' and @text='${discount_son_kind}']
+    AppiumLibrary.Click Element    //android.widget.RadioButton[@resource-id='com.yunnex.smartcanteenchaos:id/rb_order_discount_free' and @text='${discount_son_kind}']
+    选择优惠原因    ${element}
+    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='确定']
+    AppiumLibrary.Page Should Contain Element    //android.widget.RelativeLayout[@resource-id='com.yunnex.smartcanteenchaos:id/rl_order_detail_cy_root']
+
+退菜
+    [Arguments]    ${handle}    ${reason}
+    AppiumLibrary.Click Element    //android.widget.TextView[@text='${handle}']
+    AppiumLibrary.Element Text Should Be    android:id/title    ${handle}
+    ${fruit_num}    AppiumLibrary.Get Text    com.yunnex.smartcanteenchaos:id/retread_order_dish_number
+    ${num}    Evaluate    '${fruit_num}'.split('：')[1]
+    ${num_after}    Evaluate    int(${num})
+    ${num_before}    AppiumLibrary.Get Text    com.yunnex.smartcanteenchaos:id/tv_sale_dish_goods_num
+    ${num_before}    Evaluate    int(${num_before})
+    Run Keyword If    ${num_after}>=${num_before}    Run Keywords    选择优惠原因    ${reason}    AND    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='确定']    ELSE    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='取消']
+
+转菜
+    [Arguments]    ${desk_name}    ${fruit}
+    AppiumLibrary.Click Element    //android.widget.TextView[@text='转菜']
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_positive' and @text='选择目标桌台']
+    Run Keyword If    '${status}'=='True'    Run Keywords    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_positive' and @text='选择目标桌台']    AND    转菜操作
+    ...    ${desk_name}    ${fruit}    ELSE    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_negative' and @text='返回']
+
+赠送
+    [Arguments]    ${handle}    ${reason}
+    AppiumLibrary.Click Element    //android.widget.TextView[@text='${handle}']
+    AppiumLibrary.Element Text Should Be    android:id/title    赠送菜品
+    ${num_before}    AppiumLibrary.Get Text    com.yunnex.smartcanteenchaos:id/tv_sale_dish_goods_num
+    ${num_before}    Evaluate    int(${num_before})
+    Run Keyword If    ${num_before}>=0    Run Keywords    选择优惠原因    ${reason}    AND    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='确定']    ELSE    AppiumLibrary.Click Element    //android.widget.Button[@resource-id='com.yunnex.smartcanteenchaos:id/btn_submit' and @text='取消']
+    AppiumLibrary.Page Should Contain Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_order_detail_discount_name' and @text='赠送菜品']
+
+转菜操作
+    [Arguments]    ${desk_name}    ${fruit}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${desk_name}']
+    Run Keyword If    '${status}'=='True'    Run Keywords    AppiumLibrary.Click Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_table' and @text='${desk_name}']    AND    AppiumLibrary.Click Element
+    ...    //android.widget.Button[@text='确认']    AND    AppiumLibrary.Page Should Not Contain Element    ${fruit}    ELSE IF    '${status}'=='False'
+    ...    AppiumLibrary.Click Element    //android.widget.Button[@text='再想想']    ELSE    订单完成并返回    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_right' and @text='快餐模式']
+
+快餐模式-堂食
+    [Arguments]    ${text}    ${many_fruit}    ${in_or_out}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_right' and @text='${text}']
+    Run Keyword If    '${status}'=='True'    Run Keywords    快餐模式-模式选择    ${many_fruit}    AND    堂食-外带
+    ...    ${in_or_out}    ELSE    log    无法进入快餐模式
+    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/iv_order_detail_order_status
+
+快餐模式-外带
+    [Arguments]    ${text}    ${many_fruit}    ${in_or_out}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_right' and @text='${text}']
+    Run Keyword If    '${status}'=='True'    Run Keywords    快餐模式-模式选择    ${many_fruit}    AND    堂食-外带
+    ...    ${in_or_out}    ELSE    log    无法进入快餐模式
+    AppiumLibrary.Element Text Should Be    com.yunnex.smartcanteenchaos:id/tv_order_detail_waima    ${in_or_out}
+
+筛选桌台
+    [Arguments]    ${text}    ${check_element}
+    ${status}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    com.yunnex.smartcanteenchaos:id/iv_right
+    ${title}    Run Keyword And Return Status    AppiumLibrary.Element Text Should Be    com.yunnex.smartcanteenchaos:id/tv_mid    点餐
+    Comment    ${kind}    Run Keyword And Return Status    AppiumLibrary.Page Should Contain Element    //android.widget.TextView[@resource-id='com.yunnex.smartcanteenchaos:id/tv_right' and @text='${text}']
+    Run Keyword If    '${status}'=='True' and '${title}'=='True'    Run Keywords    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/iv_right    AND    AppiumLibrary.Page Should Contain Element
+    ...    com.yunnex.smartcanteenchaos:id/listview    AND    Run Keyword    进行筛选    ${text}    ${check_element}
+    ...    ELSE    log    无法进行筛选

@@ -1,0 +1,10 @@
+*** Settings ***
+Resource          ../Keywords-公共/0-自定义关键字.txt
+Resource          商户.txt
+Resource          支付.txt
+Resource          公共.txt
+Resource          商城.txt
+Resource          会员.txt
+Resource          营销.txt
+Resource          消费.txt
+Resource          通用.txt

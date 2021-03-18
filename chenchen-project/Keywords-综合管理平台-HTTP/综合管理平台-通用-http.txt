@@ -1,0 +1,6 @@
+*** Settings ***
+Resource          0-综合管理平台-http.txt
+
+*** Keywords ***
+加载OEM公共请求部分
+    add_url_cookie    ;JSESSIONID=${G_OEM_JSESSIONID}

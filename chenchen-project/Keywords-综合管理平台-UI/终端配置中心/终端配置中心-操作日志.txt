@@ -1,0 +1,2 @@
+*** Settings ***
+Resource          0-终端配置中心.txt

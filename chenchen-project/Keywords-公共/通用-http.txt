@@ -1,0 +1,46 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+修改Json格式的请求Body
+    [Arguments]    ${json_pointer}    ${json_value}
+    ${json_value}    Convert To String    ${json_value}
+    Set Json Value By Path    ${json_pointer}    ${json_value}
+
+修改Url
+    [Arguments]    ${参数}    ${修改值}
+    [Documentation]    参数使用 {} 包裹进行标记，替换时连同 {} 一起替换
+    ${修改值}    Convert To String    ${修改值}
+    Modify Url    ${参数}    ${修改值}
+
+修改Url携带的参数
+    [Arguments]    ${参数}    ${修改值}
+    ${修改值}    Convert To String    ${修改值}
+    Modify Url Para    ${参数}    ${修改值}
+
+创建http上下文
+    [Arguments]    ${host}    ${scheme}=https    ${is_repeat}=False
+    [Documentation]    is_repeat为True，每次都会创建链接；为False，则判断上一个host是否和当前host一致，不一致创建链接。
+    ExtendHttpLibrary.Create Context    ${host}    ${scheme}    ${is_repeat}
+
+加载接口模板
+    [Arguments]    ${excel名称}    ${接口索引}
+    ${sheet名称}    Set Variable    ${excel名称}
+    @{model}    Split String    ${excel名称}    _
+    Load Interface Templete    ${G_HTTP_PATH}/@{model}[0]/${excel名称}.xlsx    ${接口索引}
+
+发送请求
+    ${response_status}    ${response_body}    Send Request
+    Set Global Variable    ${G_RESPONSE_STATUS}    ${response_status}
+    Set Global Variable    ${G_RESPONSE_BODY}    ${response_body}
+
+获取当前时间戳
+    #接口需要13位的时间戳
+    ${time}    Evaluate    time.time()    time
+    ${time}    Convert To String    ${time}
+    ${ret_time}    Replace String    ${time}    .    9
+    [Return]    ${ret_time}
+
+验证请求响应状态
+    [Arguments]    ${status}=200
+    verify_response_status    ${status}

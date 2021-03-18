@@ -1,0 +1,120 @@
+*** Settings ***
+Resource          0-android端-ui.txt
+
+*** Keywords ***
+app参数
+    # Path Info
+    Set Environment Variable    G_SQAROOT    F:\\chenchen-project
+    # App Test Info
+    Set Environment Variable    U_APP_WAITTING_TIME    2
+    Set Environment Variable    U_APP_CURRENT_VERSION    Yunnex-SmartCanteenChaos-v60000000-appStore-release-20180929_175906.apk
+    Set Environment Variable    U_APP_WAIT_OR_NOT_Y    yes
+    Set Environment Variable    U_APP_WAIT_OR_NOT_N    no
+    Set Environment Variable    U_APP_DISCOUNT_CARD    501924276138
+    Set Environment Variable    U_APP_BRANCH_ID    10086
+    Set Environment Variable    U_APPIUM_DEVICE_NAME    ${EMPTY}
+    #Appium setup
+    Set Environment Variable    G_APPIUM_APP_DIR    %{G_SQAROOT}\\Tools\\apk    # app package directory
+    Set Environment Variable    G_APPIUM_APP_APK    %{G_APPIUM_APP_DIR}\\%{U_APP_CURRENT_VERSION}    #apk
+    Set Environment Variable    G_APPIUM_HOST_IPO    http://127.0.0.1:4723/wd/hub
+    Set Environment Variable    G_APPIUM_APP_PACKAGE    com.yunnex.smartcanteenchaos
+    Set Environment Variable    G_APPIUM_PLATFORM_NAME    android
+    Set Environment Variable    G_APPIUM_PLATFORM_VERSION    4.4.2
+    Set Environment Variable    G_APPIUM_APP_ACTIVITY    .SplashActivity
+    Set Environment Variable    G_APPIUM_DEVICE_NAME    ${EMPTY}
+    # Mysql Test Info
+    Set Environment Variable    G_PROD_SQL_NAME    1    #数据库类型
+    Set Environment Variable    G_PROD_SQL_DB    1    #数据库名称
+    Set Environment Variable    G_PROD_SQL_USER    1    #用户名
+    Set Environment Variable    G_PROD_SQL_PWD    1    #密码
+    Set Environment Variable    G_PROD_SQL_HOST    1    #数据库地址
+    Set Environment Variable    G_PROD_SQL_PORT    3306    #数据库端口号
+    Set Environment Variable    U_PROD_SQL_CHARSET    UTF-8    #编码
+    Set Environment Variable    G_PROD_SQL_DB    1
+
+连接模拟器
+    Comment    Set Environment Variable    U_app_name    devices
+    Comment    log    %{U_app_name}
+    #set device name
+    ${device_name}    get_device_name
+    Set Environment Variable    U_APPIUM_DEVICE_NAME    ${device_name}
+    ${status}    Run Keyword And Ignore Error    Set Device Name    ${device_name}
+    log    ${status}
+    Run Keyword If    '${status[0]}'!='PASS'    Run Keywords    Kill Process    AND    Start Adb Services    AND
+    ...    Set Device Name    ${device_name}
+
+启动Appium server服务
+    ${status1}    Run Keyword And Ignore Error    Appium Server Status
+    ${status2}    Run Keyword And Ignore Error    Start Appium Server
+    Run Keyword If    '${status2[0]}'!= 'PASS'    log    ' Appium server error'
+
+打开服务员APP
+    Comment    AppiumLibrary.Open Application    http://localhost:4723/wd/hub    platformName=Android    platformVersion=7.1.1    deviceName=oppo_a83-FUFAAMU8KBL7GAWS    appPackage=com.yunnex.smartcanteenchaos
+    ...    appActivity=.SplashActivity    appActivity=.SplashActivity
+    Comment    AppiumLibrary.Open Application    http://localhost:4723/wd/hub    platformName=Android    platformVersion=7.1.1    deviceName=oppo_a83-FUFAAMU8KBL7GAWS    appPackage=com.tencent.mm
+    ...    appActivity=com.tencent.mm.ui.LauncherUI
+    AppiumLibrary.Open Application    http://10.10.51.129:4723/wd/hub    platformName=Android    platformVersion=4.4.2    deviceName=172.16.2.33:5555    app=%{G_APPIUM_APP_APK}    appPackage=com.yunnex.smartcanteenchaos
+    ...    appActivity=.SplashActivity    fullReset=False
+    Comment    AppiumLibrary.Open Application    %{G_APPIUM_HOST_IPO}    platformName=%{G_APPIUM_PLATFORM_NAME}    platformVersion=%{G_APPIUM_PLATFORM_VERSION }    deviceName=127.0.0.1:62001    appPackage=%{G_APPIUM_APP_PACKAGE }
+    ...    appActivity=%{G_APPIUM_APP_ACTIVITY }    fullReset=False    #不用清除登录数据
+    sleep    %{U_APP_WAITTING_TIME}
+    Comment    G_APPIUM_HOST_IPO    http://127.0.0.1:4723/wd/hub
+    Comment    G_APPIUM_APP_PACKAGE    com.yunnex.smartcanteenchaos
+    Comment    G_APPIUM_PLATFORM_NAME    android
+    Comment    G_APPIUM_PLATFORM_VERSION    4.4.2
+    Comment    G_APPIUM_APP_ACTIVITY    .SplashActivity
+    Comment    G_APPIUM_DEVICE_NAME    ${EMPTY}
+
+始终允许操作
+    Comment    AppiumLibrary.Click Button    index=1    #始终允许
+    Comment    AppiumLibrary.Click Button    name=始终允许
+    Comment    AppiumLibrary.Click Button    id=com.yunnex.smartcanteenchaos:id/btn_negative
+    : FOR    ${i}    IN RANGE    1    #如何动态获取点击次数？？？
+    \    AppiumLibrary.Click Button    index=0
+    Comment    AppiumLibrary.Press Keycode    4    #4表示手机返回键
+    sleep    2
+
+输入掌贝门店账号
+    [Arguments]    ${branchID}
+    服务员APP-通用.长等待输入文本    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/et_shop')]    ${branchID}
+    Comment    AppiumLibrary.Input Text    com.yunnex.smartcanteenchaos:id/et_shop    ${branchID}
+
+点击下一步
+    Comment    AppiumLibrary.Click Button    index=3    #index
+    Comment    AppiumLibrary.Click Element    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/btn_shop_register_next')]    #resource-id/xpath
+    AppiumLibrary.Click Button    下一步    #name
+
+输入操作员编号
+    [Arguments]    ${operatorNumber}
+    服务员APP-通用.长等待输入文本    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/et_operate_id')]    ${operatorNumber}
+    Comment    AppiumLibrary.Input Text    com.yunnex.smartcanteenchaos:id/et_operate_id    ${operatorNumber}
+
+输入操作员登录密码
+    [Arguments]    ${password}
+    服务员APP-通用.长等待输入文本    xpath=//*[contains(@resource-id, 'com.yunnex.smartcanteenchaos:id/et_operate_password')]    ${password}
+    Comment    AppiumLibrary.Input Password    com.yunnex.smartcanteenchaos:id/et_operate_password    ${password}
+
+点击登录按钮
+    AppiumLibrary.Click Element    com.yunnex.smartcanteenchaos:id/btn_register
+    sleep    %{U_APP_WAITTING_TIME}
+    ${error_info}    Run Keyword And Ignore Error    AppiumLibrary.Wait Until Page Does Not Contain Element    com.yunnex.smartcanteenchaos:id/message_text    \    #登录按钮消失
+    ${login_user_info}    Run Keyword If    ${error_info[0]}=='Fail'    Get text    com.yunnex.smartcanteenchaos:id/message_text    #获取登录不成功toast原因
+    log    ${login_user_info}
+
+点击home键
+    AppiumLibrary.Press Keycode    3
+
+登录操作
+    [Arguments]    ${branchID}=${A_门店账号}    ${operatorNumber}=${A_设备操作员_编号}    ${password}=${A_设备操作员_密码}
+    Comment    点击home键
+    打开服务员APP
+    始终允许操作
+    输入掌贝门店账号    ${branchID}
+    点击下一步
+    输入操作员编号    ${operatorNumber}
+    输入操作员登录密码    ${password}
+    服务员APP-首页.点击登录按钮
+
+结束进程
+    Kill Process
+    Stop Appium Server

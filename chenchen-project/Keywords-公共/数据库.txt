@@ -1,0 +1,376 @@
+*** Settings ***
+Resource          0-自定义关键字.txt
+
+*** Keywords ***
+卡券-获取已下线会员卡列表
+    [Arguments]    ${shop_id}=${G_商户id}
+    ${names}    查询sql    SELECT title FROM `base_info` where shop_id='${shop_id}' and card_type='0' and listing='2';
+    ${list}    Create List
+    ${count}    Get Length    ${names}
+    : FOR    ${i}    IN RANGE    ${count}
+    \    Append To List    ${list}    ${names[${i}][0]}
+    [Return]    ${list}
+
+卡券-通过卡券名称获取基础信息
+    [Arguments]    ${name}    ${para}
+    [Documentation]    para：id、serial、shop_id
+    ${result}    查询sql    SELECT ${para} FROM base_info WHERE title='${name}';
+    ${return}    Set Variable    ${result[0][0]}
+    [Return]    ${return}
+
+卡券-通过手机号和商户id查找内存id
+    [Arguments]    ${mobile}    ${shop_id}=${G_商户id}
+    ${id}    卡券-通过手机号和商户id查找用户信息    ${mobile}    ${shop_id}    id
+    ${memberId}    通过表名和已知列查找其他列数据    customer_account    customer_id    ${id}    member_id
+    [Return]    ${memberId}
+
+卡券-通过手机号和商户id查找用户信息
+    [Arguments]    ${mobile}    ${shop_id}    ${para}
+    [Documentation]    customer表----para：member_id
+    ${result}    查询sql    SELECT ${para} FROM saofu.customer WHERE mobile='${mobile}' AND shop_id = '${shop_id}'
+    ${ret_value}    Set Variable    ${result[0][0]}
+    [Return]    ${ret_value}
+
+卡券-通过手机号和商户id获取积分
+    [Arguments]    ${mobile}    ${shop_id}=${G_商户id}
+    ${memberId}    卡券-通过手机号和商户id查找内存id    ${mobile}
+    ${剩余积分}    通过表名和已知列查找其他列数据    customer_account    member_id    ${memberId}    bonus
+    ${冻结积分}    通过表名和已知列查找其他列数据    customer_account    member_id    ${memberId}    locked_bonus
+    ${可用积分}    Evaluate    int(${剩余积分})-int(${冻结积分})
+    [Return]    ${剩余积分}    ${冻结积分}    ${可用积分}
+
+卡券-通过手机号和商户id获取账户余额
+    [Arguments]    ${mobile}    ${shop_id}=${G_商户id}
+    ${memberId}    卡券-通过手机号和商户id查找内存id    ${mobile}
+    ${本金余额-分}    通过表名和已知列查找其他列数据    customer_account    member_id    ${memberId}    capital_amount
+    ${本金余额-元}    两个整数相加取两位小数并去零    ${本金余额-分}    0
+    ${赠送金额余额-分}    通过表名和已知列查找其他列数据    customer_account    member_id    ${memberId}    present_amount
+    ${赠送金额余额-元}    两个整数相加取两位小数并去零    ${赠送金额余额-分}    0
+    ${账户余额-分}    通过表名和已知列查找其他列数据    customer_account    member_id    ${memberId}    balance_total
+    ${账户余额-元}    两个整数相加取两位小数并去零    ${账户余额-分}    0
+    [Return]    ${本金余额-分}    ${本金余额-元}    ${赠送金额余额-分}    ${赠送金额余额-元}    ${账户余额-分}    ${账户余额-元}
+
+商城-查询商品排名行数
+    [Arguments]    ${begin_date}=7天前    ${end_date}=昨天
+    [Documentation]    begin_date
+    ...    例如：2017-08-28
+    ...
+    ...    end_date
+    ...    例如：2017-0903
+    ${beginDate}    获取日期    ${begin_date}
+    ${endDate}    获取日期    ${end_date}
+    ${todayDate}    Get Current Date    result_format=%Y-%m-%d
+    ${result}    查询sql    SELECT COUNT(*) FROM (SELECT mg.name FROM mall.mall_product_order_goods mpog, mall.mall_product_order mpo, mall.product_order po, mall.mall_goods mg WHERE mpo.id = mpog.mall_product_order_id AND mpo.id = po.id AND mpog.mall_goods_id = mg.id AND mpo.create_date BETWEEN '${begin_date}' AND '${end_date}' AND mg.shop_id = ${G_商户id} AND mpo.status IN (100,101,102) AND mpo.`type` IN (1,2,3,4) AND mpo.`update_time` NOT BETWEEN '${todayDate} 00:00:00' AND '${todayDate} 23:59:59' GROUP BY mpog.mall_goods_id ORDER BY SUM(mpog.amount) DESC ,mall_goods_id ASC) a;    ${DB_MALL_CONNECTION}    #查询金额，单位为元，保留两位小数
+    ${sum}    Set Variable    ${result[0][0]}
+    ${sum}    Set Variable if    '${sum}'=='None'    0    ${sum}    #不符合条件返回原值
+    [Return]    ${sum}
+
+商城-查询平均每单金额
+    [Arguments]    ${type}=1,2,3    ${pay_type}=1,2,3,4    ${begin_date}=7天前    ${end_date}=昨天
+    ${beginDate}    获取日期    ${begin_date}
+    ${endDate}    获取日期    ${end_date}
+    ${result}    查询sql    SELECT FLOOR((SUM(mpo.deliver_fee)+SUM(po.total_fee))/COUNT(mpo.id)) FROM product_order po,mall_product_order mpo WHERE po.id = mpo.id AND po.shop_id = ${G_商户id} AND mpo.type IN (${type}) AND mpo.pay_type IN (${pay_type}) AND mpo.create_date BETWEEN '${beginDate}' AND '${endDate}';    ${DB_MALL_CONNECTION}
+    ${average}    Set Variable    ${result[0][0]}
+    ${average}    Set Variable if    '${average}'=='None'    0    ${average}    #不符合条件返回原值
+    [Return]    ${average}
+
+商城-查询总订单数
+    [Arguments]    ${type}=1,2,3,4    ${pay_type}=1,2,3,4,11    ${begin_date}=7天前    ${end_date}=昨天
+    ${beginDate}    获取日期    ${begin_date}
+    ${endDate}    获取日期    ${end_date}
+    ${result}    查询sql    SELECT COUNT(mpo.id) FROM product_order po,mall_product_order mpo WHERE po.id = mpo.id AND po.shop_id = ${G_商户id} AND mpo.type IN (${type}) AND mpo.pay_type IN (${pay_type}) AND mpo.create_date BETWEEN '${begin_date}' AND '${end_date}';    ${DB_MALL_CONNECTION}
+    ${count}    Set Variable    ${result[0][0]}
+    [Return]    ${count}
+
+商城-查询总订单金额
+    [Arguments]    ${type}=1,2,3,4    ${pay_type}=1,2,3,4,11    ${begin_date}=7天前    ${end_date}=昨天
+    [Documentation]    通过订单类别，支付方式，起止时间查询总订单金额
+    ...    type：
+    ...    默认全部：1,2,3
+    ...    1 配送订单，2 自提订单，3 店内订单，4票券订单
+    ...
+    ...    pay_type：
+    ...    默认全部：1,2,3,4,11
+    ...    1 微信支付，2 到店支付，3 货到付款，4 储值卡,11在线支付
+    ...
+    ...    begin_date
+    ...    例如：2017-08-28
+    ...
+    ...    end_date
+    ...    例如：2017-0903
+    ${beginDate}    获取日期    ${begin_date}
+    ${endDate}    获取日期    ${end_date}
+    ${result}    查询sql    SELECT SUM(mpo.deliver_fee)+SUM(po.total_fee)FROM mall.product_order po,mall.mall_product_order mpo WHERE po.id = mpo.id AND mpo.type IN (${TYPE}) AND mpo.pay_type IN (${pay_type}) AND po.shop_id = ${G_商户id} AND mpo.create_date BETWEEN '${begin_date}' AND '${end_date}';    ${DB_MALL_CONNECTION}    #查询金额，单位为元，保留两位小数
+    ${sum}    Set Variable    ${result[0][0]}
+    ${sum}    Set Variable if    '${sum}'=='None'    0    ${sum}    #不符合条件返回原值
+    [Return]    ${sum}
+
+商城-通过会员手机号查自提id
+    [Arguments]    ${shop_id}=${G_SHOP_ID}    ${mobile}=${G_MOBILE}
+    ${result_1}    查询sql    SELECT id FROM customer_fetch_addr WHERE customer_id IN (SELECT id FROM customer WHERE mobile = '${mobile}' AND shop_id = '${shop_id}')    ${DB_SAOFU_CONNECTION}
+    ${customerFetchAddrId}    Run Keyword If    '${result_1}'!='[]'    Set Variable    ${result_1[0][0]}
+    [Return]    ${customerFetchAddrId}
+
+商城-通过分类名称获取分类id
+    [Arguments]    ${name}
+    ${result}    数据库.查询sql    SELECT id FROM mall_goods_cate WHERE NAME = '${name}'    ${DB_MALL_CONNECTION}    #查询商品id
+    ${cate_id}    Run Keyword If    ${result}!=''    Set Variable    ${result[0][0]}
+    [Return]    ${cate_id}
+
+商城-通过商品名称获取商品id
+    [Arguments]    ${name}
+    ${result}    数据库.查询sql    SELECT id FROM mall_goods WHERE NAME = '${name}' AND del_flag = '0' ORDER BY update_time DESC    ${DB_MALL_CONNECTION}    #查询商品id
+    ${goods_id}    Run Keyword If    ${result}!=''    Set Variable    ${result[0][0]}
+    [Return]    ${goods_id}
+
+商城-通过商户ID和快递名查找快递ID
+    [Arguments]    ${shopid}    ${快递公司}
+    ${sdcid}    查询sql    SELECT id FROM saofu.shop_deliver_company WHERE `name`="${快递公司}" AND shop_id=${shopid}
+    ${sdc_id}    Set Variable    ${sdcid[0][0]}
+    [Return]    ${sdc_id}
+
+商城-通过商户ID查找取消原因ID
+    [Arguments]    ${shopid}    ${原因编号}=0
+    ${reason_id}    查询sql    SELECT id FROM mall.product_order_cancel_reason WHERE shop_id=${shopid}
+    ${reason_ID}    set variable    ${reason_id[${原因编号}][0]}
+    [Return]    ${reason_ID}
+
+商城-通过物流公司名称查询物流公司sdc_id
+    [Arguments]    ${sdc_name}
+    ${result}    查询sql    SELECT id FROM shop_deliver_company WHERE shop_id = ${G_商户id} AND del_flag = 0 AND NAME ='${sdc_name}'    ${DB_MALL_CONNECTION}
+    ${sdc_id}    Set Variable    ${result[0][0]}
+    [Return]    ${sdc_id}
+
+商城-通过规格名称查询IDstandardId
+    [Arguments]    ${goods_name}    ${standards_1_name}=    ${standards_2_name}=    ${standards_3_name}=
+    ${goods_id}    商城-通过商品名称获取商品id    ${goods_name}
+    : FOR    ${i}    IN RANGE    1
+    \    ${result}    查询sql    SELECT id FROM mall.`mall_goods_standards` WHERE mall_goods_id = '${goods_id}'    ${DB_MALL_CONNECTION}
+    \    Exit For Loop If    '${standards_1_name}'==''
+    \    ${result}    查询sql    SELECT id FROM mall.`mall_goods_standards` WHERE mall_goods_id = '${goods_id}' AND standard_id_first IN (SELECT id FROM mall.mall_goods_main_standards WHERE mall_goods_id = '${goods_id}' AND NAME = '${standards_1_name}')    ${DB_MALL_CONNECTION}
+    \    Exit For Loop If    '${standards_2_name}'==''
+    \    ${result}    查询sql    SELECT id FROM mall.`mall_goods_standards` WHERE mall_goods_id = '${goods_id}' AND standard_id_first IN (SELECT id FROM mall.mall_goods_main_standards WHERE mall_goods_id = '${goods_id}' AND NAME = '${standards_1_name}') AND standard_id_second IN (SELECT id FROM mall.mall_goods_main_standards WHERE mall_goods_id = '${goods_id}' AND NAME = '${standards_2_name}')    ${DB_MALL_CONNECTION}
+    \    Exit For Loop If    '${standards_3_name}'==''
+    \    ${result}    查询sql    SELECT id FROM mall.`mall_goods_standards` WHERE mall_goods_id = '${goods_id}' AND standard_id_first IN (SELECT id FROM mall.mall_goods_main_standards WHERE mall_goods_id = '${goods_id}' AND NAME = '${standards_1_name}') AND standard_id_second IN (SELECT id FROM mall.mall_goods_main_standards WHERE mall_goods_id = '${goods_id}' AND NAME = '${standards_2_name}') AND standard_id_third IN (SELECT id FROM mall.mall_goods_main_standards WHERE mall_goods_id = '${goods_id}' AND NAME = '${standards_3_name}')    ${DB_MALL_CONNECTION}
+    ${result}    Set Variable    ${result[0][0]}
+    [Return]    ${result}
+
+商城-通过订单ID查找商户ID
+    [Arguments]    ${订单ID}
+    ${id}    查询sql    SELECT shop_id FROM mall.product_order WHERE id=${订单ID}    #根据商户账号查询商户ID
+    ${shopid}    set variable    ${id[0][0]}
+    [Return]    ${shopid}
+
+外卖-根据商户ID、门店ID、分类名称、商品名称查询商品ID
+    [Arguments]    ${shop_id}    ${branch_id}    ${cataname}    ${goodsname}
+    ${cataid}    外卖-通过商户ID和商品分类名查询分类ID    ${shop_id}    ${cataname}
+    ${goodsID}    查询sql    SELECT id from waimai.waimai_goods where name="${goodsname}" and waimai_goods_catagory_id="${cataid}" AND shop_branch_id="${branch_id}"    #由商品名、分类id、门店id查询出商品id
+    ${goods_id}    set variable    ${goodsID[0][0]}
+    [Return]    ${goods_id}
+
+外卖-根据第三方单号查询到系统单号
+    [Arguments]    ${三方单号}
+    ${result}    查询sql    SELECT wai_mai_product_order_id FROM waimai.waimai_product_order_discount WHERE platform_order_id=${三方单号} and
+    ${系统单号}    set variable    ${result[0][0]}
+    [Return]    ${系统单号}
+
+外卖-根据第三方订单ID查找所属商户ID
+    [Arguments]    ${三方单号}
+    ${result}    查询sql    SELECT shop_id FROM waimai.waimai_product_order WHERE platform_order_id = ${三方单号}
+    ${shop_id}    Set Variable    ${result[0][0]}
+    [Return]    ${shop_id}
+
+外卖-通过商户ID和商品分类名查询分类ID
+    [Arguments]    ${shop_id}    ${name}
+    ${result}    数据库.查询sql    SELECT id from waimai.waimai_goods_category WHERE name='${name}' and shop_id='${shop_id}'
+    ${categoryId}    set variable    ${result[0][0]}
+    [Return]    ${categoryId}
+
+执行sql
+    [Arguments]    ${sql}    ${db}=${DB_SAOFU_CONNECTION}
+    Connect To Database Using Custom Params    pymysql    ${db}
+    Run Keyword And Continue On Failure    Execute Sql String    ${sql}
+    Disconnect From Database
+
+支付-修改为非子商户状态
+    [Arguments]    ${appid}    ${mchid}    ${mchkey}    ${shop_branch_id}    ${shop_id}    ${accept_model}=0
+    执行sql    update wx_trade_config set open_accept_model = '${accept_model}',app_id='${appid}',mch_id='${mchid}',mch_key='${mchkey}' where shop_branch_id='${shop_branch_id}' and shop_id = '${shop_id}'    ${DB_PAYMENT_CONNECTION}    #open_accept_model 0-非子商户 \ 1-子商户 \
+
+支付-修改单多账号
+    [Arguments]    ${wx_sign}    ${shop_id}
+    执行sql    UPDATE trade_config SET single_or_multiple_account = '${wx_sign}' WHERE shop_id='${shop_id}'    ${DB_PAYMENT_CONNECTION}
+
+支付-修改支付宝代理商
+    [Arguments]    ${zfb_provider}    ${shop_id}=${G_商户id}
+    [Documentation]    ${zfb_provider} \ 支付宝代理商:0直连 \ 1民生
+    执行sql    update trade_config set zfb_service_provider = '${zfb_provider}' where shop_id = '${shop_id}'    ${DB_PAYMENT_CONNECTION}    #0-直连 \ 1-民生
+
+支付-修改支付宝支付通道
+    [Arguments]    ${pay_type}    ${shop_id}=${G_商户id}
+    [Documentation]    ${pay_type} 支付宝支付类型 ： 2-非ISV \ 3-ISV
+    执行sql    UPDATE trade_config set zfb_pay_type = '${pay_type}' where shop_id = '${shop_id}'    ${DB_PAYMENT_CONNECTION}    #支付宝支付类型:2-支付宝非ISV,3-支付宝ISV',
+
+支付-修改支付开关状态
+    [Arguments]    ${open_wxpay_status}    ${shop_id}
+    执行sql    UPDATE trade_config set open_weixin_pay='${open_wxpay_status}' where shop_id='${shop_id}'    ${DB_PAYMENT_CONNECTION}    # 0-关闭微信开关 1-开启微信支付
+
+支付-修改民生商户号
+    [Arguments]    ${wx_merchant_num}    ${shop_branch_id}
+    执行sql    UPDATE cmbc_trade_config set wx_merchant_no='${wx_merchant_num}' where shop_branch_id='${shop_branch_id}' and shop_id='${G_商户id}'    ${DB_PAYMENT_CONNECTION}
+
+支付-修改直连&民生通道
+    [Arguments]    ${wx_service_provider}
+    执行sql    update trade_config set wx_service_provider='${wx_service_provider}' where shop_id='${G_商户id}'    ${DB_PAYMENT_CONNECTION}    #wx_service_provider \ 0-直连 \ 1-民生
+
+支付-子商户更新微信收款账号
+    [Arguments]    ${app_id}    ${mch_id}    ${shop_branch_id}    ${accept_model}=0
+    执行sql    update wx_trade_config set app_id='${app_id}',mch_id='${mch_id}',open_accept_model = '${accept_model}' \ where shop_branch_id=' ${shop_branch_id}'    ${DB_PAYMENT_CONNECTION}
+
+支付-开启支付开关状态
+    执行sql    UPDATE trade_config set open_weixin_pay='1' where shop_id='739'    ${DB_PAYMENT_CONNECTION}
+
+支付-支付配置初始化
+    执行sql    update trade_config set wx_service_provider='0' where shop_id='${G_商户id}'    ${DB_PAYMENT_CONNECTION}    #切换为直连通道
+    执行sql    UPDATE trade_config SET single_or_multiple_account = '0' WHERE shop_id='${G_商户id}'    ${DB_PAYMENT_CONNECTION}    #切换为单账号
+    执行sql    update wx_trade_config set app_id='${G_深圳云移_appid}',mch_id='${G_深圳云移_mchid}',open_accept_model = '1' \ where shop_branch_id='0'    ${DB_PAYMENT_CONNECTION}    #还原总部支付配置
+    执行sql    update wx_trade_config set app_id='${G_深圳云移_appid}',mch_id='${G_深圳云移_mchid}',open_accept_model = '1' \ where shop_branch_id='0'    ${DB_PAYMENT_CONNECTION}    #还原testa-支付测试门店配置
+
+支付-通过订单id查询新旧流程
+    [Arguments]    ${order_id}
+    ${result}    查询sql    select version from product_order where id='${order_id}'    ${DB_PAYMENT_CONNECTION}
+    ${return}    Set Variable    ${result[0][0]}
+    [Return]    ${return}
+
+智能小二-获取小二id
+    [Arguments]    ${sendXiaoerName}
+    ${result}    数据库.查询sql    SELECT id FROM marketing.xiaoer_base_config WHERE config_name = '${sendXiaoerName}' ORDER BY create_time DESC    #查询小二id
+    ${xiaoer_id}    Set Variable    ${result[0][0]}
+    [Return]    ${xiaoer_id}
+
+查询sql
+    [Arguments]    ${sql}    ${db}=${DB_SAOFU_CONNECTION}
+    Connect To Database Using Custom Params    pymysql    ${db}
+    @{results}    Run Keyword And Continue On Failure    Query    ${sql}
+    Disconnect From Database
+    [Return]    @{results}
+
+根据操作员ID查找到设备所属商户ID和门店ID
+    [Arguments]    ${ID}=${G_POS_ID}
+    ${result}    查询sql    SELECT * FROM saofu.account_operator WHERE id=${G_POS_ID}
+    ${shop_id}    Set Variable    ${result[0][5]}
+    ${shop_branch_id}    Set Variable    ${result[0][4]}
+    [Return]    ${shop_id}    ${shop_branch_id}
+
+通过卡券名称获取serial
+    [Arguments]    ${name}
+    ${result}    查询sql    SELECT serial FROM base_info WHERE title='${name}';
+    ${return}    Set Variable    ${result[0][0]}
+    [Return]    ${return}
+
+通过商户id获取商户serial
+    [Arguments]    ${shop_id}
+    ${result}    查询sql    SELECT SERIAL FROM `shop` WHERE id = '${shop_id}'
+    ${serial}    Set Variable    ${result[0][0]}
+    [Return]    ${serial}
+
+通过手机号和商户id查找用户openId
+    [Arguments]    ${mobile}    ${shop_id}
+    ${result}    查询sql    SELECT channel_serial FROM `customer` WHERE mobile='${mobile}' AND shop_id = '${shop_id}'
+    Comment    ${openId}    Set Variable    ${result[0][0]}
+    ${openId}    Run Keyword If    '${mobile}'!=''    Set Variable    ${result[0][0]}
+    [Return]    ${openId}
+
+通过表名和已知列查找其他列数据
+    [Arguments]    ${table}    ${name}    ${value}    ${ret_name}
+    ${result}    查询sql    SELECT ${ret_name} FROM saofu.${table} WHERE ${name}='${value}'
+    ${ret_value}    Set Variable    ${result[0][0]}
+    [Return]    ${ret_value}
+
+通过门店名称获取shopBranchId
+    [Arguments]    ${shopBranchName}
+    ${result}    查询sql    SELECT id FROM shop_branch WHERE NAME ="${shopBranchName}"
+    ${shopBranchId}    Set Variable    ${result[0][0]}
+    [Return]    ${shopBranchId}
+
+顾客数据-查询会员用户数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(a.mobile) FROM saofu.`customer` a,(SELECT mobile FROM saofu.`customer_member` WHERE shop_id=${商户ID})b WHERE a.shop_id=${商户ID} AND a.is_member='1' AND b.mobile=a.mobile;
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Teardown]
+    [Return]    ${ret_value}
+
+顾客数据-查询手机号
+    [Arguments]    ${shop}    ${mo}
+    ${b}    查询sql    SELECT mobile FROM saofu.customer WHERE shop_id=${shop} AND mobile=${mo};
+    ${a}    set variable    ${b[0][0]}
+    [Return]    ${a}
+
+顾客数据-查询昨天交易笔数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(t.product_order_id) FROM payment.trade_order t,(SELECT id FROM payment.`product_order` \ \ WHERE shop_id=${商户ID} AND \ \ create_time>(SELECT DATE_SUB(CURDATE(),INTERVAL 1 DAY)) AND create_time<(SELECT DATE_SUB(CURDATE(),INTERVAL 0 DAY))) a \ \ WHERE shop_id=${商户ID} AND STATUS=2 AND channel!='5' \ \ AND a.id=t.product_order_id;
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+顾客数据-查询昨天交易金额
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT SUM(t.receipt_fee/100) \ FROM payment.trade_order t,(SELECT id FROM payment.`product_order` \ WHERE shop_id=${商户ID} AND \ \ create_time>(SELECT DATE_SUB(CURDATE(),INTERVAL 1 DAY)) AND create_time<(SELECT DATE_SUB(CURDATE(),INTERVAL 0 DAY))) a \ \ WHERE shop_id=${商户ID} AND STATUS=2 AND channel!='5' \ AND a.id=t.product_order_id;
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+顾客数据-查询近180天用户数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(j.channel_serial) FROM (SELECT DISTINCT(h.channel_serial) FROM (SELECT s.channel_serial,r.create_time FROM saofu.customer s,(SELECT \ w.customer_id,b.create_time FROM saofu.card_weixin_customer w,(SELECT t.shop_id,t.channel,t.buyer_user_id,t.create_time FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=${商户ID} AND channel=6)b WHERE b.buyer_user_id=w.serial)r WHERE r.customer_id=s.id \ UNION \ SELECT \ e.channel_serial,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.channel_serial \ UNION \ SELECT \ e.channel_serial,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.id \ )h WHERE h.create_time>(SELECT DATE_SUB(CURDATE(),INTERVAL 181 DAY)))j;    #根据时间段查询用户数
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+顾客数据-查询近30天用户数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(j.channel_serial) FROM (SELECT DISTINCT(h.channel_serial) FROM (SELECT s.channel_serial,r.create_time FROM saofu.customer s,(SELECT \ w.customer_id,b.create_time FROM saofu.card_weixin_customer w,(SELECT t.shop_id,t.channel,t.buyer_user_id,t.create_time FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=${商户ID} AND channel=6)b WHERE b.buyer_user_id=w.serial)r WHERE r.customer_id=s.id \ UNION \ SELECT \ e.channel_serial,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.channel_serial \ UNION \ SELECT \ e.channel_serial,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.id \ )h WHERE h.create_time>(SELECT DATE_SUB(CURDATE(),INTERVAL 31 DAY)))j;    #根据时间段查询用户数
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+顾客数据-查询近90天用户数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(j.channel_serial) FROM (SELECT DISTINCT(h.channel_serial) FROM (SELECT s.channel_serial,r.create_time FROM saofu.customer s,(SELECT \ w.customer_id,b.create_time FROM saofu.card_weixin_customer w,(SELECT t.shop_id,t.channel,t.buyer_user_id,t.create_time FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=${商户ID} AND channel=6)b WHERE b.buyer_user_id=w.serial)r WHERE r.customer_id=s.id \ UNION \ SELECT \ e.channel_serial,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.channel_serial \ UNION \ SELECT \ e.channel_serial,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.id \ )h WHERE h.create_time>(SELECT DATE_SUB(CURDATE(),INTERVAL 91 DAY)))j;    #根据时间段查询用户数
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+顾客数据-查询非会员用户数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(j.channel_serial) FROM (SELECT DISTINCT(h.channel_serial) FROM (SELECT s.channel_serial,s.is_member,r.create_time FROM saofu.customer s,(SELECT \ w.customer_id,b.create_time FROM saofu.card_weixin_customer w,(SELECT t.shop_id,t.channel,t.buyer_user_id,t.create_time FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=${商户ID} AND channel=6)b WHERE b.buyer_user_id=w.serial)r WHERE r.customer_id=s.id UNION \ SELECT \ e.channel_serial,e.is_member,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.channel_serial \ UNION SELECT e.channel_serial,e.is_member,r.create_time FROM saofu.customer e, (SELECT buyer_user_id,create_time FROM payment.trade_order WHERE shop_id=${商户ID} AND STATUS=2 AND buyer_user_id IS NOT NULL)r WHERE r.buyer_user_id=e.id)h WHERE h.is_member=0)j;
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+顾客数据-根据商户id查询总用户数
+    [Arguments]    ${商户ID}
+    ${ID}    查询sql    SELECT COUNT(h.channel_serial) FROM (SELECT s.channel_serial FROM saofu.customer s,(SELECT \ w.customer_id FROM saofu.card_weixin_customer w,(SELECT t.shop_id,t.channel, t.buyer_user_id FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=${商户ID} \ AND channel=6)b WHERE w.serial=b.buyer_user_id)d WHERE d.customer_id=s.id UNION SELECT t.buyer_user_id FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=${商户ID} \ AND channel=1) h;    #根据商户id查询用户数
+    ${ret_value}    set variable    ${ID[0][0]}
+    [Return]    ${ret_value}
+
+支付-修改支付宝开关状态
+    [Arguments]    ${open_zfb}    ${shop_id}=${G_商户id}
+    [Documentation]    ${open_zfb} 支付宝开关
+    执行sql    update trade_config set open_zfb_pay = '${open_zfb}' where shop_id='${shop_id}'    ${DB_PAYMENT_CONNECTION}    #0-关闭开关 \ 1-开启
+
+支付-修改订单状态
+    [Arguments]    ${status}    ${orderid}
+    [Documentation]    ${status} :订单状态 \ 1-待支付 \ 2-支付成功
+    执行sql    UPDATE trade_order SET `status`= ${status} WHERE id='${orderid}'    ${DB_PAYMENT_CONNECTION}
+
+支付-查询订单状态
+    [Arguments]    ${orderid}
+    ${result}    查询sql    select `status` from trade_order WHERE id='${orderid}'    ${DB_PAYMENT_CONNECTION}
+    [Return]    ${result}
+
+顾客数据-查询by_user_id
+    ${result}    查询sql    SELECT t.shop_id,t.channel,t.buyer_user_id,t.create_time FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=912 AND channel=6    ${DB_PAYMENT_CONNECTION}
+    [Return]    ${result}
+
+顾客数据-查询customer
+    [Arguments]    ${user_id}
+    ${customer}    查询sql    SELECT \ w.customer_id,b.create_time FROM saofu.card_weixin_customer where w.serial='${user_id}'    ${DB_SAOFU_CONNECTION}
+    [Return]    ${customer}
+
+顾客数据-查询储值卡支付的用户
+    ${customer}    查询sql    SELECT t.buyer_user_id,t.create_time FROM payment.trade_order t,payment.product_order po WHERE t.status=2 AND t.product_order_id=po.id AND t.shop_id=912 AND channel != 6 and buyer_user_id is NOT NULL     ${DB_SAOFU_CONNECTION}
+    [Return]    ${customer}

@@ -1,0 +1,77 @@
+*** Settings ***
+Resource          0-微信端-HTTP.txt
+
+*** Keywords ***
+卡券中心
+    [Arguments]    ${shopserial}=10919782405580136448
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_卡券    index_wx_couponlist
+    通用-http.修改Url    shopserial    ${shopserial}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+
+领取优惠券
+    [Arguments]    ${couponid}=40970867603969019904
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_卡券    index_wx_getincoupon
+    通用-http.修改Url    couponid    ${couponid}
+    通用-http.修改Url    openid    ${G_OPENID}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+我的券
+    [Arguments]    ${shopserial}=10919782405580136448
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_卡券    index_wx_mycoupon
+    通用-http.修改Url    shopserial    ${shopserial}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+我的卡
+    [Arguments]    ${shopserial}=10919782405580136448
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_卡券    index_wx_mycard
+    通用-http.修改Url    shopserial    ${shopserial}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+不可用卡券
+    [Arguments]    ${shopserial}=10919782405580136448
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    True
+    通用-Http.加载接口模板    WEIXIN_卡券    index_wx_unavailable
+    通用-http.修改Url    shopserial    ${shopserial}
+    微信端-通用-http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
+    Should Contain    ${G_RESPONSE_BODY}    "success":true
+
+智慧餐厅生成订单
+    [Arguments]    ${shop_id}=${G_商户id}    ${shopBranchName}=卡友专店
+    ${shop_serial}    数据库.通过商户id获取商户serial    ${shop_id}
+    ${shopBranchId}    数据库.通过门店名称获取shopBranchId    ${shopBranchName}
+    通用-Http.创建http上下文    ${G_WEIXIN_HOST_TEST}    http    TRUE
+    通用-Http.加载接口模板    WEIXIN_智慧餐厅_C端    index_wxcanyin_orders_creater_order
+    修改Url携带的参数    shopSerial    ${shop_serial}
+    修改Url携带的参数    branchId    ${shopBranchId}
+    修改Json格式的请求Body    /goods/0/goodsId    254128
+    修改Json格式的请求Body    /goods/0/id    42745
+    修改Json格式的请求Body    /shoppingId/0    42745
+    修改Json格式的请求Body    /goods/0/categoryId    2001
+    修改Json格式的请求Body    /goods/0/goodsName    "测试自动化"
+    修改Json格式的请求Body    /goods/0/originalPrice    500
+    修改Json格式的请求Body    /goods/0/productId    20498
+    修改Json格式的请求Body    /goods/0/skuId    20579
+    修改Json格式的请求Body    /goods/0/tableId    71335
+    修改Json格式的请求Body    /goods/0/branchId    1516663044
+    修改Json格式的请求Body    /goods/0/openId    "ous64uEoykmizg5dQtY7yB8WtMFs"
+    修改Json格式的请求Body    /usableBenefits/0/bizId    "0c4205effb0b4b9a9664b0521da67899"
+    微信端-通用-Http.加载微信端公共请求部分
+    发送请求
+    验证请求响应状态    200
